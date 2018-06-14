@@ -1,0 +1,98 @@
+condition common
+    installed_rule_sampling.sampling_rho = 0
+    installed_rule_sampling.sampling_delta = 0
+    #installed_rule_sampling.sampling_m = 2
+    installed_rule_sampling.sampling_m = 1
+    #installed_rule_sampling.sampling_k = 10
+    installed_rule_sampling.sampling_k = 1
+    installed_rule_sampling.sampling_alpha = 1.5
+
+    catchall_sampling.sampling_rho = 1
+    catchall_sampling.sampling_delta = 0
+    catchall_sampling.sampling_m = 0
+    catchall_sampling.sampling_k = 999999
+
+    install_rule_sample_threshold = 1
+    maximum_flow_idle_time = 90
+
+    verbose_level = 6
+    prone_all_flows_info_interval = 100000
+    end_of_world_timestamp = 99999999999999
+
+    log_directory = ./testrun
+    log_file_prefix = flexamsim-caida-testrun07-
+    log_file_extension = .txt
+    log_sampled_packet_size = True
+    #log_sampled_packet_interarrival_time = False
+    log_sampled_packet_interarrival_time = True
+    #log_sampled_packet_tcp_flag = True
+    log_sampled_packet_tcp_flag = False
+
+    pcap_file_list_name = ./testrun/samplepcaplistcaida.txt
+    
+    packet_id_generation = asis
+    packet_processing = light_heavy_hitter_detection
+    #sampled_packet_processing = estimate_idle_timeout
+    #sampled_packet_processing = record_sampled_packet_only
+    #sampled_packet_processing = estimate_idle_timeout_consecutive_packets
+    #sampled_packet_processing = estimate_idle_timeout
+    #sampled_packet_processing = idle_timeout_basedon_flow_size
+    sampled_packet_processing = idle_timeout_basedon_flow_size_inter_arrival_time
+    show_statistics_type = rule_table_occupancy
+    show_statistics_interval = 1
+    rule_install_delay = 0.000
+    rule_install_delay_first = 0.000
+    rule_timeout_idle_beta = 1
+    rule_timeout_hard_gamma = 1
+    rule_timeout_idle_zeta = 1
+    rule_timeout_idle_theta = 0.75
+    rule_timeout_idle = 10000
+    rule_timeout_hard = 999999
+    rule_timeout_idle_min = 10
+    rule_timeout_idle_max = 999999
+    flow_table_maximum_size = 999999
+    eviction_policy = evict_longest_estimated_next_packet_arrival
+
+#condition 122
+#    rule_timeout_idle_zeta = 1.00
+#    rule_timeout_idle_theta = 0.75
+#    rule_timeout_idle = 50
+#    log_file_id = zeta_1.00_theta_0.75_idle_50
+
+condition 999
+    packet_id_generation = asisraw
+    sampled_packet_processing = record_sampled_packet_only
+    rule_timeout_idle_zeta = 1.00
+    rule_timeout_idle_theta = 0.75
+    rule_timeout_idle = 999999
+    log_sampled_packet_tcp_flag = True
+    log_sampled_packet_tcp_sqn = True
+    log_file_id = interpacket_arrival_times_tcp_flags_sqn
+
+#condition 201
+#    packet_processing = dynamic_heavy_hitter_detection
+#    sampled_packet_processing = dynamic_heavy_hitter_detection
+#    catchall_sampling.sampling_rho = 100
+#    install_rule_sample_threshold = 2
+#    installed_rule_sampling.sampling_k = 200
+#    installed_rule_sampling.sampling_alpha = 1.01
+#    log_file_id = rho_100_l_2_k_200_alpha_1.01
+#
+#condition 202
+#    packet_processing = dynamic_heavy_hitter_detection
+#    sampled_packet_processing = dynamic_heavy_hitter_detection
+#    catchall_sampling.sampling_rho = 100
+#    install_rule_sample_threshold = 2
+#    installed_rule_sampling.sampling_k = 200
+#    installed_rule_sampling.sampling_alpha = 1.1
+#    log_file_id = rho_100_l_2_k_200_alpha_1.1
+#
+#condition 201
+#    packet_processing = dynamic_heavy_hitter_detection
+#    sampled_packet_processing = dynamic_heavy_hitter_detection
+#    catchall_sampling.sampling_rho = 100
+#    install_rule_sample_threshold = 2
+#    installed_rule_sampling.sampling_k = 200
+#    installed_rule_sampling.sampling_alpha = 1.5
+#    log_file_id = rho_100_l_2_k_200_alpha_1.5
+#
