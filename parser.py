@@ -5,7 +5,7 @@
 import dpkt
 import socket
 from datetime import datetime
-
+from switch import Switch
 
 #### HELPER FUNCTIONS FROM 
 #### http://dpkt.readthedocs.io/en/latest/_modules/examples/print_packets.html#mac_addr
@@ -39,42 +39,17 @@ def inet_to_str(inet):
     except ValueError:
         return socket.inet_ntop(socket.AF_INET6, inet)
 
-""" 
-class Packet:
-    def __init__(self):
-        self.eth_src = None
-        self.eth_dest = None
-        self.eth_type = None
-        self.ip_src = None
-        self.ip_dest = None
-        self.ip_type = None
- """
 
 # read the pcap file and converted into useable structure
 def process_pcap_file(pcap_file_name):
     pcap_file_handler = open(pcap_file_name, "rb")
     pcap_file = dpkt.pcap.Reader(pcap_file_handler)
 
+    switch = Switch()
+
     for timestamp, buf in pcap_file:
-        print("-------------------")
-        print(datetime.utcfromtimestamp(timestamp))
-
-        eth = dpkt.ethernet.Ethernet(buf)
-        print('Ethernet Frame: FROM: ' + mac_addr(eth.src) + " TODO: " + mac_addr(eth.dst) + " TYPE: " + str(eth.type))
-
-        ip = eth.data
-
-        if not isinstance(ip, dpkt.ip.IP):
-            print("Not an IP packet")
-            return
-
-        print("Source IP: " + inet_to_str(ip.src))
-        print("Dest IP: " + inet_to_str(ip.dst))
-        print("Protocol: " + str(ip.p))
+        switch.process_packet(timestamp, buf)
         
-
-
-
 
 def main():
     process_pcap_file("./tracefiles/univ1_pt1")
