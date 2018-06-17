@@ -51,11 +51,23 @@ class Switch:
     def __init__(self):
         self.id = None
         self.flow_table = FlowTable()
+        self.controller = Controller()
+        self.current_time = 0
+        self.dump_interval = 100 # hardcode to 10ms right now
+        # last time statistic dump time
+        # also used for check for timeout
+        self.last_dump_time = 0 
 
     # process an IP packet
     def process_packet(self, timestamp, raw_packet):
         print("---------Processing Packet At Time:----------")
         print(datetime.utcfromtimestamp(timestamp))
+        self.current_time = timestamp
+
+        if self.current_time - self.last_dump_time > self.dump_interval:
+            self.flow_table.all_timeout(self.current_time)
+            # output statstics
+            self.last_dump_time = self.current_time
 
         eth = dpkt.ethernet.Ethernet(raw_packet)
         ip = eth.data
@@ -74,28 +86,38 @@ class Switch:
 
         packet.eth_src = eth.src
         packet.eth_dst = eth.dst
-        packet.eth_type = eth_type
+        packet.eth_type = eth.type
 
-        packet.ip_src = inet_to_str(ip.src)
-        packet.ip_dst = inet_to_str(ip.dst)
+        packet.ip_src = ip.src
+        packet.ip_dst = ip.dst
         packet.ip_protocol = ip.p
 
-        packet.tcp_sort = tcp.sport
+        packet.tcp_sport = tcp.sport
         packet.tcp_dport = tcp.dport
         
         packet.print_packet()
-        
 
-        
+        id = packet.get_id()
+
+        if self.flow_table.if_flow_exists(id):
+            self.flow_table.update_flow(packet)
+        else:
+            flow = self.controller.create_flow(packet)
+            self.flow_table.insert_flow(flow)
 
 
 class FlowTable:
     def __init__(self):
         self.table = {}
         self.timeout = None
+        # statistics figures
+        self.timeout_flow_count = 0
+        self.max_flow_count = 0
+        self.current_active_flow = 0
+        self.total_flow = 0
 
-    def if_flow_exists(self, id):
-        if id in self.table
+    def if_flow_exists(self, flow_id):
+        if flow_id in self.table:
             return True
         else:
             return False
@@ -104,27 +126,40 @@ class FlowTable:
         if self.if_flow_exists(flow.id):
             raise Exception("Flow already exists")
 
-        self.table[flow.key] = flow
+        self.table[flow.id] = flow
 
-    def deactivate_flow(self, id):
+    def delete_flow(self, id):
         if not self.if_flow_exists(id):
             raise Exception("Flow does not exist")
         
-        self.table[id].active = False
+        del self.table[id]
 
-        return
+    def update_flow(self, packet):
+        id = packet.get_id()
+        if not self.if_flow_exists(id):
+            raise Exception("Flow does not exist")
 
-    def check_timeout(self, flow, timeout=self.timeout):
+        flow = self.table[id]
+        flow.packets_count += 1
+        flow.last_update = packet.timestamp
+        self.table[id] = flow
+
+    def check_timeout(self, flow, current_time):
         """
         Iterate through the table and check for timeout
         """
 
-        delta = time.time() - flow.last_update # TODO: fix this. not current time
-        if delta > timeout:
+        delta = current_time - flow.last_update # TODO: fix this. not current time
+        if delta > self.timeout:
             return True
         else:
             return False
-        
+    
+    def all_timeout(self, current_time):
+        for id, flow in self.table.items():
+            if self.check_timeout(flow, current_time):
+                self.delete_flow(id)
+
 
 
 class Flow:
@@ -141,33 +176,31 @@ class Packet:
     def __init__(self, timestamp):
         self.timestamp = timestamp
         self.eth_src = None
-        self.eth_dest = None
+        self.eth_dst = None
         self.eth_type = None
         self.ip_src = None
         self.ip_dst = None
         self.ip_protocol = None
         self.tcp_sport = None
         self.tcp_dport = None
+        self.size = 0
     
     def get_id(self):
-        return str(self.ip_src) + str(self.ip_dst) + str(self.tcp_src_port) + str(self.tcp_dst_port)
+        return "" + str(self.ip_src) + str(self.ip_dst) + str(self.tcp_sport) + str(self.tcp_dport)
 
-    def print_packet(self)
-        print("Packet with ID: ") + self.get_id()
-        print("Source MAC: ") + self.eth_src
-        print("Dest Mac: ") + self.eth_dest
-        print("Source IP: ") + self.ip_src
-        print("Dest IP: ") + self.ip_dst
-        print("Protocol: ") + self.ip_protocol
+    def print_packet(self):
+        print("Packet with ID: " + self.get_id())
+        print("Source MAC: " + mac_addr(self.eth_src))
+        print("Dest Mac: " + mac_addr(self.eth_dst))
+        print("Source IP: " + inet_to_str(self.ip_src))
+        print("Dest IP: " + inet_to_str(self.ip_dst))
+        print("Protocol: " + str(self.ip_protocol))
         # if TCP: ...
-        print("TCP Source port: ") + self.tcp_sport
-        print("TCP Dest port: ") + self.tcp_dport
+        print("TCP Source port: " + str(self.tcp_sport))
+        print("TCP Dest port: " + str(self.tcp_dport))
 
 
         
-
-
-
 class Controller:
     def create_flow(self, packet):
         id = packet.get_id()
@@ -178,3 +211,4 @@ class Controller:
         flow.active = True
         
         return flow
+
