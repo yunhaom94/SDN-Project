@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Parser will parse the pcap file
+# Parser will read the pcap file
 
 import dpkt
 import socket
@@ -18,9 +18,9 @@ def process_pcap_file(pcap_file_name):
 
     for timestamp, buf in pcap_file:
         switch_1.process_packet(timestamp, buf)
-        if count == -1:
-            break
-        count += 1
+        #if count == -1:
+        #    break
+        #count += 1
         
 
 def main():

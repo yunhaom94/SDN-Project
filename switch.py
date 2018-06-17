@@ -1,6 +1,7 @@
 import dpkt
 import socket
 from datetime import datetime
+import operator
 
 
 #### HELPER FUNCTIONS FROM 
@@ -113,7 +114,10 @@ class Switch:
         print("Number of Packets Processed: "+ str(self.total_packets))
         print("Timeout Set to: " + str(self.flow_table.timeout))
         print("Current Active Flow: " + str(self.flow_table.current_active_flow))
-        print("Maximum Number of Flows Installed: " + str(self.flow_table.max_flow_count))
+        print("Total Number of Flows Installed: " + str(self.flow_table.total_flow))
+        print("Maximum Number of Active Flows: " + str(self.flow_table.max_flow_count))
+        print("Maximum Number of Packets in Active Flow: " + str(self.flow_table.get_max_packets_flow()))
+
         print("======================================================")
 
 
@@ -139,8 +143,10 @@ class FlowTable:
             raise Exception("Flow already exists")
 
         self.table[flow.id] = flow
-        self.max_flow_count += 1
+        self.total_flow += 1
         self.current_active_flow += 1
+        if self.current_active_flow > self.max_flow_count:
+            self.max_flow_count = self.current_active_flow
 
     def delete_flow(self, id):
         if not self.if_flow_exists(id):
@@ -181,6 +187,12 @@ class FlowTable:
         for id in to_delete:
             self.delete_flow(id)
 
+    def get_max_packets_flow(self):
+        
+        if len(self.table.values()) > 0:
+            return max(self.table.values(), key=operator.attrgetter("packets_count")).packets_count
+        else:
+            return 0
 
 
 class Flow:
