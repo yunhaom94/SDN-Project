@@ -57,29 +57,32 @@ class Switch:
         # last time statistic dump time
         # also used for check for timeout
         self.last_dump_time = 0 
+        self.total_packets = 0
 
     # process an IP packet
     def process_packet(self, timestamp, raw_packet):
-        print("---------Processing Packet At Time:----------")
-        print(datetime.utcfromtimestamp(timestamp))
+        #print("---------Processing Packet At Time:----------")
+        #print(datetime.utcfromtimestamp(timestamp))
         self.current_time = timestamp
+        self.total_packets += 1
 
-        if self.current_time - self.last_dump_time > self.dump_interval:
+
+        if (self.current_time - self.last_dump_time) * 1000 > self.dump_interval:
             self.flow_table.all_timeout(self.current_time)
-            # output statstics
+            self.output_statistics()
             self.last_dump_time = self.current_time
 
         eth = dpkt.ethernet.Ethernet(raw_packet)
         ip = eth.data
 
         if not isinstance(ip, dpkt.ip.IP):
-            print("Not an IP packet")
+            #print("Not an IP packet")
             return
 
         tcp = ip.data
 
         if not isinstance(tcp, dpkt.tcp.TCP):
-            print("Not an TCP packet")
+            #print("Not an TCP packet")
             return
 
         packet = Packet(timestamp)
@@ -95,7 +98,7 @@ class Switch:
         packet.tcp_sport = tcp.sport
         packet.tcp_dport = tcp.dport
         
-        packet.print_packet()
+        #packet.print_packet()
 
         id = packet.get_id()
 
@@ -105,11 +108,20 @@ class Switch:
             flow = self.controller.create_flow(packet)
             self.flow_table.insert_flow(flow)
 
+    def output_statistics(self):
+        print("Current Time is: " + str(datetime.utcfromtimestamp(self.current_time)))
+        print("Number of Packets Processed: "+ str(self.total_packets))
+        print("Timeout Set to: " + str(self.flow_table.timeout))
+        print("Current Active Flow: " + str(self.flow_table.current_active_flow))
+        print("Maximum Number of Flows Installed: " + str(self.flow_table.max_flow_count))
+        print("======================================================")
+
+
 
 class FlowTable:
     def __init__(self):
         self.table = {}
-        self.timeout = None
+        self.timeout = 100
         # statistics figures
         self.timeout_flow_count = 0
         self.max_flow_count = 0
@@ -127,12 +139,15 @@ class FlowTable:
             raise Exception("Flow already exists")
 
         self.table[flow.id] = flow
+        self.max_flow_count += 1
+        self.current_active_flow += 1
 
     def delete_flow(self, id):
         if not self.if_flow_exists(id):
             raise Exception("Flow does not exist")
         
         del self.table[id]
+        self.current_active_flow -= 1
 
     def update_flow(self, packet):
         id = packet.get_id()
@@ -149,16 +164,22 @@ class FlowTable:
         Iterate through the table and check for timeout
         """
 
-        delta = current_time - flow.last_update # TODO: fix this. not current time
+        # convert to ms
+        delta = (current_time - flow.last_update) * 1000
         if delta > self.timeout:
             return True
         else:
             return False
     
     def all_timeout(self, current_time):
+        to_delete = []
+
         for id, flow in self.table.items():
             if self.check_timeout(flow, current_time):
-                self.delete_flow(id)
+                to_delete.append(id)
+
+        for id in to_delete:
+            self.delete_flow(id)
 
 
 

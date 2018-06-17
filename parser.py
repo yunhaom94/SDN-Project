@@ -18,7 +18,7 @@ def process_pcap_file(pcap_file_name):
 
     for timestamp, buf in pcap_file:
         switch_1.process_packet(timestamp, buf)
-        if count == 10:
+        if count == -1:
             break
         count += 1
         
