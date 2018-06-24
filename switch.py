@@ -96,13 +96,17 @@ class Switch:
             tcp = ip.data
         elif packet.ip_protocol == IP_PROTOCOL.UDP: # udp
             udp =  ip.data
+        else:
+            return
 
-        if tcp:
+        if tcp and isinstance(tcp, dpkt.tcp.TCP):
             packet.tcp_sport = tcp.sport
             packet.tcp_dport = tcp.dport
-        elif udp:
+        elif udp and isinstance(tcp, dpkt.udp.UDP):
             packet.udp_dport = udp.dport
             packet.udp_sport = udp.dport
+        else:
+            return
         
         #packet.print_packet()
 
