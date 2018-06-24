@@ -106,3 +106,7 @@ venv.bak/
 .vs
 tracefiles
 .vscode
+
+result.py
+result.txt
+out.txt

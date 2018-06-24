@@ -36,16 +36,12 @@ def inet_to_str(inet):
     except ValueError:
         return socket.inet_ntop(socket.AF_INET6, inet)
 
-""" 
-class Packet:
-    def __init__(self):
-        self.eth_src = None
-        self.eth_dest = None
-        self.eth_type = None
-        self.ip_src = None
-        self.ip_dest = None
-        self.ip_type = None
- """
+#### MORE HELPERS
+class IP_PROTOCOL():
+    ICMP = 1
+    TCP = 6
+    UDP = 17
+    
 
 # the class to simulate a switch
 class Switch:
@@ -73,17 +69,15 @@ class Switch:
             self.output_statistics()
             self.last_dump_time = self.current_time
 
-        eth = dpkt.ethernet.Ethernet(raw_packet)
+        try:
+            eth = dpkt.ethernet.Ethernet(raw_packet)
+        except Exception:
+            return
+        
         ip = eth.data
 
         if not isinstance(ip, dpkt.ip.IP):
             #print("Not an IP packet")
-            return
-
-        tcp = ip.data
-
-        if not isinstance(tcp, dpkt.tcp.TCP):
-            #print("Not an TCP packet")
             return
 
         packet = Packet(timestamp)
@@ -96,8 +90,19 @@ class Switch:
         packet.ip_dst = ip.dst
         packet.ip_protocol = ip.p
 
-        packet.tcp_sport = tcp.sport
-        packet.tcp_dport = tcp.dport
+        tcp, udp = None, None
+
+        if packet.ip_protocol == IP_PROTOCOL.TCP: # tcp
+            tcp = ip.data
+        elif packet.ip_protocol == IP_PROTOCOL.UDP: # udp
+            udp =  ip.data
+
+        if tcp:
+            packet.tcp_sport = tcp.sport
+            packet.tcp_dport = tcp.dport
+        elif udp:
+            packet.udp_dport = udp.dport
+            packet.udp_sport = udp.dport
         
         #packet.print_packet()
 
@@ -216,11 +221,19 @@ class Packet:
         self.ip_protocol = None
         self.tcp_sport = None
         self.tcp_dport = None
+        self.udp_sport = None
+        self.udp_dport = None
         self.size = 0
     
     def get_id(self):
-        return "" + str(self.ip_src) + str(self.ip_dst) + str(self.tcp_sport) + str(self.tcp_dport)
+        ports = ""
+        if self.ip_protocol == IP_PROTOCOL.TCP:
+            ports = str(self.tcp_sport) + str(self.tcp_dport)
+        elif self.ip_protocol == IP_PROTOCOL.UDP:
+            ports = str(self.udp_dport) + str(self.udp_sport)
 
+        return "" + str(self.ip_src) + str(self.ip_dst) + ports
+    
     def print_packet(self):
         print("Packet with ID: " + self.get_id())
         print("Source MAC: " + mac_addr(self.eth_src))

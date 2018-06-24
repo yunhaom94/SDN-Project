@@ -14,20 +14,26 @@ def process_pcap_file(pcap_file_name):
 
     switch_1 = Switch()
 
-    count = 0
+    count = 1
 
     for timestamp, buf in pcap_file:
+        #print("AT: " + str(count))
         switch_1.process_packet(timestamp, buf)
-        #if count == -1:
-        #    break
-        #count += 1
+        
+        count += 1
+        
+
         
 
 def main():
-    process_pcap_file("./tracefiles/univ1_pt1")
+    process_pcap_file("./tracefiles/trace.pcap")
     return 
 
 
 if __name__ == '__main__':
     main()
 
+'''
+TODO: 
+1. Multiple files
+'''
