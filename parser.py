@@ -8,12 +8,44 @@ from datetime import datetime
 from switch import Switch
 import os
 
+
+# debug variables
+VERBOSE_ON = True
+DEBUG_ON = True
+
+def _PRINT(*args, **kwargs): 
+    print(args)
+    print(kwargs)
+
+
+    if "func" in kwargs.keys():
+        func = kwargs["func"]
+    else:
+        func = print
+
+    if func == print:
+        func(args[0])
+    else:
+        # let the function handles it
+        func(*args)
+
+
+def DEBUG(*args, **kwargs): 
+    '''
+    Example DEBUG("Things to print", my_print_arg1, func=myprint )
+    '''
+    if DEBUG_ON:
+        _PRINT(*args, **kwargs)
+
+def VERBOSE(*args, **kwargs): 
+    if VERBOSE_ON:
+        _PRINT(*args, **kwargs)
+
+
 # read the pcap file and converted into useable structure
 def process_pcap_file(pcap_file_name, switch):
     pcap_file_handler = open(pcap_file_name, "rb")
     pcap_file = dpkt.pcap.Reader(pcap_file_handler)
-
-    
 
     count = 1
 
@@ -30,14 +62,13 @@ def main():
     path = "./tracefiles/"
     switch_1 = Switch()
 
-
     for file in os.listdir(path):
         ext = os.path.splitext(file)[1]
 
         if ext.lower() == ".pcap":
             full_path = path + file
-            print("Processing " + full_path)
-            process_pcap_file(full_path, switch_1)
+            #print("Processing " + full_path)
+            #process_pcap_file(full_path, switch_1)
         
     
     
