@@ -9,7 +9,7 @@ from switch import Switch
 import os
 
 
-# debug variables
+# debug variables and functions
 VERBOSE_ON = True
 DEBUG_ON = True
 
@@ -33,6 +33,7 @@ def _PRINT(*args, **kwargs):
 def DEBUG(*args, **kwargs): 
     '''
     Example DEBUG("Things to print", my_print_arg1, func=myprint )
+    or DEBUG("Thins to print") will call print function
     '''
     if DEBUG_ON:
         _PRINT(*args, **kwargs)
@@ -40,6 +41,91 @@ def DEBUG(*args, **kwargs):
 def VERBOSE(*args, **kwargs): 
     if VERBOSE_ON:
         _PRINT(*args, **kwargs)
+
+
+
+class Config():
+
+    _COMMON_OPTIONS = [
+        "trace_path",
+        "num_switches",
+        
+    ]
+
+    _SWITCH_OPTIONS = [
+        "timeout"
+    ]
+
+
+    def __init__(self):
+        self.trace_file_path = None
+        self.num_switches = 0
+        self.switches = []
+
+
+    @staticmethod
+    def parse_config(config_file_path):
+
+        settings = {}
+
+        with open(config_file_path, "r") as fp:
+            line = fp.readline()
+
+            in_block = None
+
+            while line:
+                # if comment
+                if line[0] == '#':
+                    line = fp.readline()
+                    continue    
+
+                line = line.split('#')[0].lower() # if comment in the back
+                # common settings
+
+                if not in_block:
+                    option = line.split("=")
+                    if option[0].strip() in Config._COMMON_OPTIONS:
+                        settings[option[0]] = option[1].strip()
+                        line = fp.readline()
+                        continue
+                    
+
+                elif in_block:
+                    option = line.split("=")
+                    if option[0].strip() in Config._SWITCH_OPTIONS:
+                        settings[in_block][option[0]]  = option[1].strip()
+                        line = fp.readline()
+                        continue
+
+                if line.split("_")[0].strip() == "condition" and line.split("_")[1].strip() != "end":
+                    if not in_block:
+                        in_block = line.split("_")[1].strip()
+                        settings[in_block] = {}
+                        line = fp.readline()
+                        continue
+                    else:
+                        raise Exception("Config: block not closed")
+
+                    
+                
+                if line.strip() == "condition_end":
+                    if in_block:
+                        in_block = None  
+                        line = fp.readline()
+                        continue
+                    else:
+                        raise Exception("Config: not in block")
+                
+                line = fp.readline()
+                continue
+
+        return settings
+                
+
+
+
+    
+
 
 
 # read the pcap file and converted into useable structure
@@ -62,6 +148,9 @@ def main():
     path = "./tracefiles/"
     switch_1 = Switch()
 
+    config_file = "config_example.txt"
+    print(Config.parse_config(config_file))
+
     for file in os.listdir(path):
         ext = os.path.splitext(file)[1]
 
@@ -70,7 +159,7 @@ def main():
             #print("Processing " + full_path)
             #process_pcap_file(full_path, switch_1)
         
-    
+    print("Done")
     
     return 
 
