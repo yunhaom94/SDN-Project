@@ -45,10 +45,9 @@ def VERBOSE(*args, **kwargs):
 
 
 class Config():
-
     _COMMON_OPTIONS = [
         "trace_path",
-        "num_switches",
+         "num_switches",
         
     ]
 
@@ -64,7 +63,7 @@ class Config():
 
 
     @staticmethod
-    def parse_config(config_file_path):
+    def parse_config_file(config_file_path):
 
         settings = {}
 
@@ -99,7 +98,7 @@ class Config():
 
                 if line.split("_")[0].strip() == "condition" and line.split("_")[1].strip() != "end":
                     if not in_block:
-                        in_block = line.split("_")[1].strip()
+                        in_block = "switch_" + line.split("_")[1].strip()
                         settings[in_block] = {}
                         line = fp.readline()
                         continue
@@ -121,6 +120,26 @@ class Config():
 
         return settings
                 
+    @staticmethod
+    def create_switches(settings):
+        switches = []
+        try:
+            num_switches = settings['num_switches']
+        except KeyError:
+            num_switches = 1
+
+        for k, v in settings.items():
+            if num_switches <= 0:
+                break
+            
+            if 'switch' in k:
+                timeout = v["timeout"]
+                switch = Switch(timeout)
+                switches.append(switch)
+                num_switches -= - 1
+
+        return switches
+            
 
 
 
@@ -149,7 +168,8 @@ def main():
     switch_1 = Switch()
 
     config_file = "config_example.txt"
-    print(Config.parse_config(config_file))
+    settings = Config.parse_config_file(config_file)
+    switches = create_switches(settings)
 
     for file in os.listdir(path):
         ext = os.path.splitext(file)[1]
@@ -158,6 +178,8 @@ def main():
             full_path = path + file
             #print("Processing " + full_path)
             #process_pcap_file(full_path, switch_1)
+            #for sw in switches:
+            #   process_pcap_file(full_path, sw)
         
     print("Done")
     
