@@ -14,10 +14,6 @@ VERBOSE_ON = True
 DEBUG_ON = True
 
 def _PRINT(*args, **kwargs): 
-    print(args)
-    print(kwargs)
-
-
     if "func" in kwargs.keys():
         func = kwargs["func"]
     else:
@@ -39,10 +35,12 @@ def DEBUG(*args, **kwargs):
         _PRINT(*args, **kwargs)
 
 def VERBOSE(*args, **kwargs): 
+    '''
+    Example VERBOSE("Things to print", my_print_arg1, func=myprint )
+    or DEBUG("Thins to print") will call print function
+    '''
     if VERBOSE_ON:
         _PRINT(*args, **kwargs)
-
-
 
 class Config():
     _COMMON_OPTIONS = [
@@ -124,19 +122,23 @@ class Config():
     def create_switches(settings):
         switches = []
         try:
-            num_switches = settings['num_switches']
+            num_switches = int(settings['num_switches'])
         except KeyError:
             num_switches = 1
+        except ValueError:
+            raise Exception("num_switches provided is not a number!")
+        
+        VERBOSE("a total number of " + str(num_switches) + " switches will be created")
 
         for k, v in settings.items():
             if num_switches <= 0:
                 break
             
-            if 'switch' in k:
-                timeout = v["timeout"]
+            if 'switch_' in k:
+                timeout = int(v["timeout"])
                 switch = Switch(timeout)
                 switches.append(switch)
-                num_switches -= - 1
+                num_switches -= 1
 
         return switches
             
@@ -165,11 +167,11 @@ def process_pcap_file(pcap_file_name, switch):
 
 def main():
     path = "./tracefiles/"
-    switch_1 = Switch()
+    #switch_1 = Switch(100)
 
     config_file = "config_example.txt"
     settings = Config.parse_config_file(config_file)
-    switches = create_switches(settings)
+    switches = Config.create_switches(settings)
 
     for file in os.listdir(path):
         ext = os.path.splitext(file)[1]
@@ -178,8 +180,8 @@ def main():
             full_path = path + file
             #print("Processing " + full_path)
             #process_pcap_file(full_path, switch_1)
-            #for sw in switches:
-            #   process_pcap_file(full_path, sw)
+            for sw in switches:
+               process_pcap_file(full_path, sw)
         
     print("Done")
     

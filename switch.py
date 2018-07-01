@@ -45,9 +45,9 @@ class IP_PROTOCOL():
 
 # the class to simulate a switch
 class Switch:
-    def __init__(self):
+    def __init__(self, timeout):
         self.id = None
-        self.flow_table = FlowTable()
+        self.flow_table = FlowTable(timeout)
         self.controller = Controller()
         self.current_time = 0
         self.dump_interval = 100 # hardcode to 10ms right now
@@ -119,6 +119,7 @@ class Switch:
             self.flow_table.insert_flow(flow)
 
     def output_statistics(self):
+        # TODO: make it output to file
         print("Current Time is: " + str(datetime.utcfromtimestamp(self.current_time)))
         print("Number of Packets Processed: "+ str(self.total_packets))
         print("Timeout Set to: " + str(self.flow_table.timeout))
@@ -132,9 +133,9 @@ class Switch:
 
 
 class FlowTable:
-    def __init__(self):
+    def __init__(self, timeout):
         self.table = {}
-        self.timeout = 100
+        self.timeout = timeout
         # statistics figures
         self.timeout_flow_count = 0
         self.max_flow_count = 0
