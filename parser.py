@@ -7,40 +7,10 @@ import socket
 from datetime import datetime
 from switch import Switch
 import os
+from helpers import *
 
 
-# debug variables and functions
-VERBOSE_ON = True
-DEBUG_ON = True
 
-def _PRINT(*args, **kwargs): 
-    if "func" in kwargs.keys():
-        func = kwargs["func"]
-    else:
-        func = print
-
-    if func == print:
-        func(args[0])
-    else:
-        # let the function handles it
-        func(*args)
-
-
-def DEBUG(*args, **kwargs): 
-    '''
-    Example DEBUG("Things to print", my_print_arg1, func=myprint )
-    or DEBUG("Thins to print") will call print function
-    '''
-    if DEBUG_ON:
-        _PRINT(*args, **kwargs)
-
-def VERBOSE(*args, **kwargs): 
-    '''
-    Example VERBOSE("Things to print", my_print_arg1, func=myprint )
-    or DEBUG("Thins to print") will call print function
-    '''
-    if VERBOSE_ON:
-        _PRINT(*args, **kwargs)
 
 class Config():
     _COMMON_OPTIONS = [
@@ -178,7 +148,7 @@ def main():
 
         if ext.lower() == ".pcap":
             full_path = path + file
-            #print("Processing " + full_path)
+            VERBOSE("Processing " + full_path)
             #process_pcap_file(full_path, switch_1)
             for sw in switches:
                process_pcap_file(full_path, sw)

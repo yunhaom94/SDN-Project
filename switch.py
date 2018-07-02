@@ -2,7 +2,7 @@ import dpkt
 import socket
 from datetime import datetime
 import operator
-
+from helpers import *
 
 #### HELPER FUNCTIONS FROM 
 #### http://dpkt.readthedocs.io/en/latest/_modules/examples/print_packets.html#mac_addr
@@ -58,8 +58,8 @@ class Switch:
 
     # process an IP packet
     def process_packet(self, timestamp, raw_packet):
-        #print("---------Processing Packet At Time:----------")
-        #print(datetime.utcfromtimestamp(timestamp))
+        VERBOSE("---------Processing Packet At Time:----------")
+        VERBOSE(datetime.utcfromtimestamp(timestamp))
         self.current_time = timestamp
         self.total_packets += 1
 
@@ -118,17 +118,22 @@ class Switch:
             flow = self.controller.create_flow(packet)
             self.flow_table.insert_flow(flow)
 
-    def output_statistics(self):
+    def output_statistics(self, to_file=False):
         # TODO: make it output to file
-        print("Current Time is: " + str(datetime.utcfromtimestamp(self.current_time)))
-        print("Number of Packets Processed: "+ str(self.total_packets))
-        print("Timeout Set to: " + str(self.flow_table.timeout))
-        print("Current Active Flow: " + str(self.flow_table.current_active_flow))
-        print("Total Number of Flows Installed: " + str(self.flow_table.total_flow))
-        print("Maximum Number of Active Flows: " + str(self.flow_table.max_flow_count))
-        print("Maximum Number of Packets in Active Flow: " + str(self.flow_table.get_max_packets_flow()))
 
-        print("======================================================")
+        if to_file:
+            pass
+        else:
+
+            print("Current Time is: " + str(datetime.utcfromtimestamp(self.current_time)))
+            print("Number of Packets Processed: "+ str(self.total_packets))
+            print("Timeout Set to: " + str(self.flow_table.timeout))
+            print("Current Active Flow: " + str(self.flow_table.current_active_flow))
+            print("Total Number of Flows Installed: " + str(self.flow_table.total_flow))
+            print("Maximum Number of Active Flows: " + str(self.flow_table.max_flow_count))
+            print("Maximum Number of Packets in Active Flow: " + str(self.flow_table.get_max_packets_flow()))
+
+            print("======================================================")
 
 
 
