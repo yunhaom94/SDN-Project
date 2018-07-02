@@ -16,6 +16,7 @@ class Config():
     _COMMON_OPTIONS = [
         "trace_path",
          "num_switches",
+         "dump_interval"
         
     ]
 
@@ -112,11 +113,6 @@ class Config():
 
         return switches
             
-
-
-
-    
-
 
 
 # read the pcap file and converted into useable structure

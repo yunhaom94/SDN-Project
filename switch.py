@@ -77,7 +77,7 @@ class Switch:
         ip = eth.data
 
         if not isinstance(ip, dpkt.ip.IP):
-            #print("Not an IP packet")
+            VERBOSE("Not an IP packet")
             return
 
         packet = Packet(timestamp)
@@ -124,7 +124,6 @@ class Switch:
         if to_file:
             pass
         else:
-
             print("Current Time is: " + str(datetime.utcfromtimestamp(self.current_time)))
             print("Number of Packets Processed: "+ str(self.total_packets))
             print("Timeout Set to: " + str(self.flow_table.timeout))
