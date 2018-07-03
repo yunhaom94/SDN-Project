@@ -55,6 +55,7 @@ class Switch:
         # also used for check for timeout
         self.last_dump_time = 0 
         self.total_packets = 0
+        self.first_wirte = True # used to check for writing logs to file
 
     # process an IP packet
     def process_packet(self, timestamp, raw_packet):
@@ -119,10 +120,28 @@ class Switch:
             self.flow_table.insert_flow(flow)
 
     def output_statistics(self, to_file=False):
-        # TODO: make it output to file
+        to_file = False
 
         if to_file:
-            pass
+            self.id = 1 
+            filename = "log_" + str(self.id)
+            # create a file if first time writing to file
+            if self.first_wirte: 
+                outfile = open(filename, "w+") # create or overwrite the file
+                outfile.close()
+                self.first_wirte = False
+
+            with open(filename, "a") as out_file:
+                out_file.write("Current Time is: " + str(datetime.utcfromtimestamp(self.current_time)) + "\n")
+                out_file.write("Number of Packets Processed: "+ str(self.total_packets) + "\n")
+                out_file.write("Timeout Set to: " + str(self.flow_table.timeout) + "\n")
+                out_file.write("Current Active Flow: " + str(self.flow_table.current_active_flow) + "\n")
+                out_file.write("Total Number of Flows Installed: " + str(self.flow_table.total_flow) + "\n")
+                out_file.write("Maximum Number of Active Flows: " + str(self.flow_table.max_flow_count) + "\n")
+                out_file.write("Maximum Number of Packets in Active Flow: " + str(self.flow_table.get_max_packets_flow()) + "\n")
+                out_file.write("======================================================\n")
+
+
         else:
             print("Current Time is: " + str(datetime.utcfromtimestamp(self.current_time)))
             print("Number of Packets Processed: "+ str(self.total_packets))
