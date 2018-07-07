@@ -22,7 +22,8 @@ class Config():
 
     _SWITCH_OPTIONS = [
         "timeout",
-        "id"
+        "id",
+        "active" 
     ]
 
 
@@ -99,7 +100,7 @@ class Config():
         try:
             num_switches = int(settings['num_switches'])
         except KeyError:
-            num_switches = 1
+            num_switches = 9999 #if not provide, just parse all conditions
         except ValueError:
             raise Exception("num_switches provided is not a number!")
         
@@ -169,7 +170,3 @@ def main():
 if __name__ == '__main__':
     main()
 
-'''
-TODO: 
-1. Multiple files
-'''

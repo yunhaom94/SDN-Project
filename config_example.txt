@@ -4,7 +4,7 @@ trace_path=path/to/traces/ # comment?
 num_switches=2
 
 
-# condition_<>  
+# condition 
 # ...
 # condition_end
 # blocks are used to define properties of a switch
