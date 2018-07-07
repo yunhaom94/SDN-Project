@@ -1,6 +1,6 @@
 # this is a comment
 # common properties are not in blocks
-trace_path=path/to/traces/ # comment?
+trace_path=./tracefiles/ # comment?
 num_switches=2
 
 

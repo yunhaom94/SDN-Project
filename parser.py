@@ -8,6 +8,7 @@ from datetime import datetime
 from switch import Switch
 import os
 from helpers import *
+import argparse
 
 
 
@@ -139,17 +140,13 @@ def process_pcap_file(pcap_file_name, switch):
         #count += 1
         
 
-        
-
 def main():
-    path = "./tracefiles/"
-
     config_file = "config_example.txt"
     settings = Config.parse_config_file(config_file)
     print(settings)
 
     switches = Config.create_switches(settings)
-
+    path = settings["trace_path"]
 
     for file in os.listdir(path):
         ext = os.path.splitext(file)[1]
@@ -168,5 +165,8 @@ def main():
 
 
 if __name__ == '__main__':
+
+
+
     main()
 
