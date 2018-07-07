@@ -2,7 +2,7 @@ import dpkt
 import socket
 from datetime import datetime
 import operator
-from helpers import *
+from helpers import Output
 
 #### HELPER FUNCTIONS FROM 
 #### http://dpkt.readthedocs.io/en/latest/_modules/examples/print_packets.html#mac_addr
@@ -59,8 +59,8 @@ class Switch:
 
     # process an IP packet
     def process_packet(self, timestamp, raw_packet):
-        VERBOSE("---------Processing Packet At Time:----------")
-        VERBOSE(datetime.utcfromtimestamp(timestamp))
+        Output.VERBOSE("---------Processing Packet At Time:----------")
+        Output.VERBOSE(datetime.utcfromtimestamp(timestamp))
         self.current_time = timestamp
         self.total_packets += 1
 
@@ -78,7 +78,7 @@ class Switch:
         ip = eth.data
 
         if not isinstance(ip, dpkt.ip.IP):
-            VERBOSE("Not an IP packet")
+            Output.VERBOSE("Not an IP packet")
             return
 
         packet = Packet(timestamp)
@@ -108,7 +108,7 @@ class Switch:
             packet.udp_dport = udp.dport
             packet.udp_sport = udp.dport
         else:
-            VERBOSE("Not TCP or UDP")
+            Output.VERBOSE("Not TCP or UDP")
             return
         
         #packet.print_packet()

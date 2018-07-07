@@ -7,7 +7,7 @@ import socket
 from datetime import datetime
 from switch import Switch
 import os
-from helpers import *
+from helpers import Output
 import argparse
 
 
@@ -105,7 +105,7 @@ class Config():
         except ValueError:
             raise Exception("num_switches provided is not a number!")
         
-        VERBOSE("a total number of " + str(num_switches) + " switches will be created")
+        Output.VERBOSE("a total number of " + str(num_switches) + " switches will be created")
 
         for k, v in settings.items():
             if num_switches <= 0:
@@ -172,8 +172,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     config_file = args.config_file
-    VERBOSE_ON = args.verbose
-    DEBUG_ON = args.debug
+    Output.VERBOSE_ON = args.verbose
+    Output.DEBUG_ON = args.debug
 
     main(config_file)
 
