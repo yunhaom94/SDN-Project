@@ -1,7 +1,7 @@
 # this is a comment
 # common properties are not in blocks
 trace_path=path/to/traces/ # comment?
-num_switches=1
+num_switches=2
 
 
 # condition_<>  
@@ -9,13 +9,14 @@ num_switches=1
 # condition_end
 # blocks are used to define properties of a switch
 # switch 1 profile
-condition_1
+condition
+id=SW1
 timeout=10
 
 condition_end
 
 # switch 2 profile
-condition_2
+condition
 timeout=100
 
 condition_end

@@ -45,8 +45,8 @@ class IP_PROTOCOL():
 
 # the class to simulate a switch
 class Switch:
-    def __init__(self, timeout):
-        self.id = None
+    def __init__(self, id, timeout):
+        self.id = id
         self.flow_table = FlowTable(timeout)
         self.controller = Controller()
         self.current_time = 0
@@ -100,13 +100,15 @@ class Switch:
         else:
             return
 
-        if tcp and isinstance(tcp, dpkt.tcp.TCP):
+
+        if tcp and type(tcp) == dpkt.tcp.TCP:
             packet.tcp_sport = tcp.sport
             packet.tcp_dport = tcp.dport
-        elif udp and isinstance(tcp, dpkt.udp.UDP):
+        elif udp and type(udp) == dpkt.udp.UDP:
             packet.udp_dport = udp.dport
             packet.udp_sport = udp.dport
         else:
+            VERBOSE("Not TCP or UDP")
             return
         
         #packet.print_packet()
@@ -127,10 +129,10 @@ Current Time is: {time}
 Total Number of Packets Processed: {total_packet}
 Timeout Set to: {timeout}
 Currently Installed Flows: {active_flow}
+Maximum Number of Packets in Installed Flows： {max_packets}
+Maximum Number of Bytes in Installed Flows: {max_bytes}
 Total Number of Flows Ever Installed: {total_flow}
 Maximum Number of Installed Flows At a Time: {max_flow_count}
-Maximum Number of Packets in Installed Flow At a Time: {max_packets}
-Maxium Number of Bytes in Installed Flow At a Time: {max_bytes}
         '''.format(time=str(datetime.utcfromtimestamp(self.current_time)),\
         total_packet=str(self.total_packets),\
         timeout=str(self.flow_table.timeout),\
@@ -140,10 +142,7 @@ Maxium Number of Bytes in Installed Flow At a Time: {max_bytes}
         max_packets=str(self.flow_table.get_max_packets_flow()),\
         max_bytes="TODO")
         
-
-
         if to_file:
-            self.id = 1 
             filename = "log_" + str(self.id)
             # create a file if first time writing to file
             if self.first_wirte: 

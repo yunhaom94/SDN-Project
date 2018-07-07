@@ -21,7 +21,8 @@ class Config():
     ]
 
     _SWITCH_OPTIONS = [
-        "timeout"
+        "timeout",
+        "id"
     ]
 
 
@@ -35,6 +36,8 @@ class Config():
     def parse_config_file(config_file_path):
 
         settings = {}
+
+        i = 0
 
         with open(config_file_path, "r") as fp:
             line = fp.readline()
@@ -61,14 +64,14 @@ class Config():
                 elif in_block:
                     option = line.split("=")
                     if option[0].strip() in Config._SWITCH_OPTIONS:
-                        settings[in_block][option[0]]  = option[1].strip()
+                        settings[i][option[0]]  = option[1].strip()
                         line = fp.readline()
                         continue
 
-                if line.split("_")[0].strip() == "condition" and line.split("_")[1].strip() != "end":
+                if line.strip() == "condition":
                     if not in_block:
-                        in_block = "switch_" + line.split("_")[1].strip()
-                        settings[in_block] = {}
+                        in_block = True
+                        settings[i] = {}
                         line = fp.readline()
                         continue
                     else:
@@ -78,8 +81,9 @@ class Config():
                 
                 if line.strip() == "condition_end":
                     if in_block:
-                        in_block = None  
+                        in_block = False  
                         line = fp.readline()
+                        i = i + 1
                         continue
                     else:
                         raise Exception("Config: not in block")
@@ -105,9 +109,14 @@ class Config():
             if num_switches <= 0:
                 break
             
-            if 'switch_' in k:
+            if k not in Config._COMMON_OPTIONS:
+                if "id" in v.keys():
+                    sid = v["id"]
+                else:
+                    sid = k
+
                 timeout = int(v["timeout"])
-                switch = Switch(timeout)
+                switch = Switch(sid, timeout)
                 switches.append(switch)
                 num_switches -= 1
 
@@ -123,21 +132,23 @@ def process_pcap_file(pcap_file_name, switch):
     count = 1
 
     for timestamp, buf in pcap_file:
-        #print("AT: " + str(count))
+
         switch.process_packet(timestamp, buf)
         
-        count += 1
+        #count += 1
         
 
         
 
 def main():
     path = "./tracefiles/"
-    #switch_1 = Switch(100)
 
     config_file = "config_example.txt"
     settings = Config.parse_config_file(config_file)
+    print(settings)
+
     switches = Config.create_switches(settings)
+
 
     for file in os.listdir(path):
         ext = os.path.splitext(file)[1]
@@ -145,10 +156,11 @@ def main():
         if ext.lower() == ".pcap":
             full_path = path + file
             print("Processing " + full_path)
-            #process_pcap_file(full_path, switch_1)
+           
             for sw in switches:
                process_pcap_file(full_path, sw)
         
+        #break
     print("Done")
     
     return 
