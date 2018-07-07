@@ -140,10 +140,8 @@ def process_pcap_file(pcap_file_name, switch):
         #count += 1
         
 
-def main():
-    config_file = "config_example.txt"
+def main(config_file):
     settings = Config.parse_config_file(config_file)
-    print(settings)
 
     switches = Config.create_switches(settings)
     path = settings["trace_path"]
@@ -165,8 +163,17 @@ def main():
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="SDN Switch Simulator")
+    parser.add_argument("config_file", help="Path to config file")
+    parser.add_argument("-v", "--verbose", help="Increase output verbosity",
+                    action="store_true")
+    parser.add_argument("-d" ,"--debug", help="Show debug messages",
+                    action="store_true")
 
+    args = parser.parse_args()
+    config_file = args.config_file
+    VERBOSE_ON = args.verbose
+    DEBUG_ON = args.debug
 
-
-    main()
+    main(config_file)
 

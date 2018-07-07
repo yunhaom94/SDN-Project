@@ -1,6 +1,6 @@
 # debug variables and functions
 VERBOSE_ON = False
-DEBUG_ON = True
+DEBUG_ON = False
 
 def _PRINT(*args, **kwargs): 
     if "func" in kwargs.keys():
