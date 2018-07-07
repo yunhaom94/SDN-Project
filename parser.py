@@ -144,7 +144,7 @@ def main():
 
         if ext.lower() == ".pcap":
             full_path = path + file
-            VERBOSE("Processing " + full_path)
+            print("Processing " + full_path)
             #process_pcap_file(full_path, switch_1)
             for sw in switches:
                process_pcap_file(full_path, sw)

@@ -120,7 +120,27 @@ class Switch:
             self.flow_table.insert_flow(flow)
 
     def output_statistics(self, to_file=False):
-        to_file = False
+        to_file = True
+
+        output_str = '''
+Current Time is: {time}
+Total Number of Packets Processed: {total_packet}
+Timeout Set to: {timeout}
+Currently Installed Flows: {active_flow}
+Total Number of Flows Ever Installed: {total_flow}
+Maximum Number of Installed Flows At a Time: {max_flow_count}
+Maximum Number of Packets in Installed Flow At a Time: {max_packets}
+Maxium Number of Bytes in Installed Flow At a Time: {max_bytes}
+        '''.format(time=str(datetime.utcfromtimestamp(self.current_time)),\
+        total_packet=str(self.total_packets),\
+        timeout=str(self.flow_table.timeout),\
+        active_flow=str(self.flow_table.current_active_flow),\
+        total_flow=str(self.flow_table.total_flow),\
+        max_flow_count=str(self.flow_table.max_flow_count),\
+        max_packets=str(self.flow_table.get_max_packets_flow()),\
+        max_bytes="TODO")
+        
+
 
         if to_file:
             self.id = 1 
@@ -132,26 +152,12 @@ class Switch:
                 self.first_wirte = False
 
             with open(filename, "a") as out_file:
-                out_file.write("Current Time is: " + str(datetime.utcfromtimestamp(self.current_time)) + "\n")
-                out_file.write("Number of Packets Processed: "+ str(self.total_packets) + "\n")
-                out_file.write("Timeout Set to: " + str(self.flow_table.timeout) + "\n")
-                out_file.write("Current Active Flow: " + str(self.flow_table.current_active_flow) + "\n")
-                out_file.write("Total Number of Flows Installed: " + str(self.flow_table.total_flow) + "\n")
-                out_file.write("Maximum Number of Active Flows: " + str(self.flow_table.max_flow_count) + "\n")
-                out_file.write("Maximum Number of Packets in Active Flow: " + str(self.flow_table.get_max_packets_flow()) + "\n")
-                out_file.write("======================================================\n")
+                out_file.write(output_str)
 
 
         else:
-            print("Current Time is: " + str(datetime.utcfromtimestamp(self.current_time)))
-            print("Number of Packets Processed: "+ str(self.total_packets))
-            print("Timeout Set to: " + str(self.flow_table.timeout))
-            print("Current Active Flow: " + str(self.flow_table.current_active_flow))
-            print("Total Number of Flows Installed: " + str(self.flow_table.total_flow))
-            print("Maximum Number of Active Flows: " + str(self.flow_table.max_flow_count))
-            print("Maximum Number of Packets in Active Flow: " + str(self.flow_table.get_max_packets_flow()))
+            print(output_str)
 
-            print("======================================================")
 
 
 

@@ -1,5 +1,5 @@
 # debug variables and functions
-VERBOSE_ON = True
+VERBOSE_ON = False
 DEBUG_ON = True
 
 def _PRINT(*args, **kwargs): 
