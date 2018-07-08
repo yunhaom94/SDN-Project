@@ -56,6 +56,8 @@ class Switch:
         self.last_dump_time = 0 
         self.total_packets = 0
         self.first_wirte = True # used to check for writing logs to file
+        self.missed = 0 # # of packets that needs to create a new flow for it
+        self.output_to_file = False # TODO: make this an config option
 
     # process an IP packet
     def process_packet(self, timestamp, raw_packet):
@@ -67,7 +69,7 @@ class Switch:
 
         if (self.current_time - self.last_dump_time) * 1000 > self.dump_interval:
             self.flow_table.all_timeout(self.current_time)
-            self.output_statistics()
+            self.output_statistics(self.output_to_file)
             self.last_dump_time = self.current_time
 
         try:
@@ -120,18 +122,21 @@ class Switch:
         else:
             flow = self.controller.create_flow(packet)
             self.flow_table.insert_flow(flow)
+            self.missed += 1
 
     def output_statistics(self, to_file=False):
-        to_file = True
+
+        hit_ratio = float((self.total_packets - self.missed) / self.total_packets)
 
         output_str = '''
 Current Time is: {time}
 Total Number of Packets Processed: {total_packet}
 Timeout Set to: {timeout}
 Currently Installed Flows: {active_flow}
-Maximum Number of Packets in Installed Flows： {max_packets}
+Maximum Number of Packets in Installed Flows：{max_packets}
 Maximum Number of Bytes in Installed Flows: {max_bytes}
 Total Number of Flows Ever Installed: {total_flow}
+Hit ratio: {hit_ratio}
 Maximum Number of Installed Flows At a Time: {max_flow_count}
         '''.format(time=str(datetime.utcfromtimestamp(self.current_time)),\
         total_packet=str(self.total_packets),\
@@ -140,7 +145,8 @@ Maximum Number of Installed Flows At a Time: {max_flow_count}
         total_flow=str(self.flow_table.total_flow),\
         max_flow_count=str(self.flow_table.max_flow_count),\
         max_packets=str(self.flow_table.get_max_packets_flow()),\
-        max_bytes="TODO")
+        max_bytes="TODO",\
+        hit_ratio=hit_ratio)
         
         if to_file:
             filename = "log_" + str(self.id)
