@@ -45,7 +45,7 @@ class IP_PROTOCOL():
 
 # the class to simulate a switch
 class Switch:
-    def __init__(self, id, timeout):
+    def __init__(self, id, timeout, to_file):
         self.id = id
         self.flow_table = FlowTable(timeout)
         self.controller = Controller()
@@ -57,7 +57,7 @@ class Switch:
         self.total_packets = 0
         self.first_wirte = True # used to check for writing logs to file
         self.missed = 0 # # of packets that needs to create a new flow for it
-        self.output_to_file = False # TODO: make this an config option
+        self.output_to_file = to_file
 
     # process an IP packet
     def process_packet(self, timestamp, raw_packet):
@@ -124,7 +124,7 @@ class Switch:
             self.flow_table.insert_flow(flow)
             self.missed += 1
 
-    def output_statistics(self, to_file=False):
+    def output_statistics(self, to_file):
 
         hit_ratio = float((self.total_packets - self.missed) / self.total_packets)
 
@@ -133,7 +133,7 @@ Current Time is: {time}
 Total Number of Packets Processed: {total_packet}
 Timeout Set to: {timeout}
 Currently Installed Flows: {active_flow}
-Maximum Number of Packets in Installed Flows：{max_packets}
+Maximum Number of Packets in Installed Flows: {max_packets}
 Maximum Number of Bytes in Installed Flows: {max_bytes}
 Total Number of Flows Ever Installed: {total_flow}
 Hit ratio: {hit_ratio}

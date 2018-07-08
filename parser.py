@@ -16,15 +16,16 @@ import argparse
 class Config():
     _COMMON_OPTIONS = [
         "trace_path",
-         "num_switches",
-         "dump_interval"
+        "num_switches",
+        "dump_interval"
         
     ]
 
     _SWITCH_OPTIONS = [
         "timeout",
         "id",
-        "active" 
+        "active",
+        "to_file" 
     ]
 
 
@@ -117,8 +118,17 @@ class Config():
                 else:
                     sid = k
 
+                to_file = False
+                
+                if "to_file" in v.keys():
+                    if v["to_file"].strip().lower() == "true":
+                        to_file = True
+
+                    
+
+
                 timeout = int(v["timeout"])
-                switch = Switch(sid, timeout)
+                switch = Switch(sid, timeout, to_file)
                 switches.append(switch)
                 num_switches -= 1
 
