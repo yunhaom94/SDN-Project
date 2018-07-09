@@ -156,6 +156,7 @@ def main(config_file):
     switches = Config.create_switches(settings)
     path = settings["trace_path"]
 
+
     for file in os.listdir(path):
         ext = os.path.splitext(file)[1]
 
