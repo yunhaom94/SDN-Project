@@ -138,6 +138,7 @@ Maximum Number of Bytes in Installed Flows: {max_bytes}
 Total Number of Flows Ever Installed: {total_flow}
 Hit ratio: {hit_ratio}
 Maximum Number of Installed Flows At a Time: {max_flow_count}
+*
         '''.format(time=str(datetime.utcfromtimestamp(self.current_time)),\
         total_packet=str(self.total_packets),\
         timeout=str(self.flow_table.timeout),\
