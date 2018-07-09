@@ -132,12 +132,12 @@ class Switch:
 Current Time is: {time}
 Total Number of Packets Processed: {total_packet}
 Timeout Set to: {timeout}
-Currently Installed Flows: {active_flow}
-Maximum Number of Packets in Installed Flows: {max_packets}
-Maximum Number of Bytes in Installed Flows: {max_bytes}
-Total Number of Flows Ever Installed: {total_flow}
-Hit ratio: {hit_ratio}
-Maximum Number of Installed Flows At a Time: {max_flow_count}
+Currently Active Flows: {active_flow}
+Maximum Number of Packets In Active Flows: {max_packets}
+Maximum Number of Bytes In Active Flows: {max_bytes}
+Total Number of Rules Ever Installed: {total_flow}
+Overall Hit Ratio: {hit_ratio}
+Maximum Number of Installed Rules At a Time: {max_flow_count}
 *
         '''.format(time=str(datetime.utcfromtimestamp(self.current_time)),\
         total_packet=str(self.total_packets),\

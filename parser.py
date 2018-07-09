@@ -137,15 +137,15 @@ class Config():
 
 
 # read the pcap file and converted into useable structure
-def process_pcap_file(pcap_file_name, switch):
+def process_pcap_file(pcap_file_name, switches):
     pcap_file_handler = open(pcap_file_name, "rb")
     pcap_file = dpkt.pcap.Reader(pcap_file_handler)
 
     count = 1
 
     for timestamp, buf in pcap_file:
-
-        switch.process_packet(timestamp, buf)
+        for sw in switches:
+            sw.process_packet(timestamp, buf)
         
         #count += 1
         
@@ -155,7 +155,8 @@ def main(config_file):
 
     switches = Config.create_switches(settings)
     path = settings["trace_path"]
-
+    ref_switch = Switch("reference", 1000000, True)
+    switches.append(ref_switch)
 
     for file in os.listdir(path):
         ext = os.path.splitext(file)[1]
@@ -163,9 +164,7 @@ def main(config_file):
         if ext.lower() == ".pcap":
             full_path = path + file
             print("Processing " + full_path)
-           
-            for sw in switches:
-               process_pcap_file(full_path, sw)
+            process_pcap_file(full_path, switches)
         
         #break
     print("Done")
@@ -188,3 +187,8 @@ if __name__ == '__main__':
 
     main(config_file)
 
+'''
+TODO:
+1. per flow hit ratio (the hit ratio of each individual flow). 
+2. # of rules per flow installed
+'''
