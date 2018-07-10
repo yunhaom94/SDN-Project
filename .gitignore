@@ -112,3 +112,5 @@ result.txt
 out.txt
 log_*
 config.txt
+*.csv
+*.xlsx
