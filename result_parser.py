@@ -3,7 +3,7 @@ Parse the simulator switch output to an .csv so that it would be easy to create 
 '''
 import argparse
 import csv
-
+import numpy as np
 
 
 def parse(file_name):
@@ -16,6 +16,10 @@ def parse(file_name):
     time = 0
     order = 0 # the numbers are in order, i.e third one after * is active flows
     tracking_values = {"Time":time}
+
+    all_active_flows = []
+    all_hit_rate = []
+
     with open(file_name, "r", encoding="utf-8") as f:
         line = f.readline()
         while line:
@@ -24,8 +28,10 @@ def parse(file_name):
                 value = content[1].strip()
                 if order == 3:
                     tracking_values["Active_Flows"] = value
+                    all_active_flows.append(float(value))
                 elif order == 6:
                     tracking_values["Hit_Rate"] = value
+                    all_hit_rate.append(float(value))
                 
                 order += 1
 
@@ -37,6 +43,26 @@ def parse(file_name):
 
             line = f.readline()
 
+    
+
+    ohter_stats = '''
+    
+Active Flows Stats: 
+Mean: {af_mean}
+Medium: {af_med}
+99th percentile: {af_99}
+95th percentile: {af_95}
+
+    '''.format(
+        af_mean=np.mean(all_active_flows),
+        af_med=np.median(all_active_flows),
+        af_99=np.percentile(all_active_flows, 99),
+        af_95=np.percentile(all_active_flows, 95)
+    )
+
+    csvfile.write(ohter_stats)
+
+    csvfile.close()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
