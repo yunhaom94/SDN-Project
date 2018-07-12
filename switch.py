@@ -59,8 +59,10 @@ class Switch:
         self.missed = 0 # # of packets that needs to create a new flow for it
         self.output_to_file = to_file
 
-    # process an IP packet
     def process_packet(self, timestamp, raw_packet):
+        '''
+        Process an IP packet and output statstics
+        '''
         Output.VERBOSE("---------Processing Packet At Time:----------")
         Output.VERBOSE(datetime.utcfromtimestamp(timestamp))
         self.current_time = timestamp
@@ -184,6 +186,11 @@ class FlowTable:
             return False
 
     def existing_flow(self, packet):
+        ''' 
+        Handles cases where a flow already exists.
+        If it's active, update the last rule in rule list.
+        If it's not active, a new rule needs to be created.
+        '''
         id = packet.get_id()
         if not self.if_flow_exists(id):
             raise Exception("Flow does not exist")
@@ -209,6 +216,12 @@ class FlowTable:
 
 
     def non_existing_flow(self, packet):
+        '''
+        Handles cases where a flow DNE.
+        Create a new flow and added to flow table then
+        call the existing flow handler
+        '''
+
         id = packet.get_id()
         if self.if_flow_exists(id):
             raise Exception("Flow exists")
@@ -219,6 +232,10 @@ class FlowTable:
 
 
     def deactivate_flow(self, id):
+        '''
+        Set a flow as deactivated, decrement the active flow counter
+        
+        '''
         if not self.if_flow_exists(id):
             raise Exception("Flow does not exist")
         
@@ -226,10 +243,6 @@ class FlowTable:
         self.current_active_flow -= 1
 
     def check_timeout(self, flow, current_time):
-        """
-        Iterate through the table and check for timeout
-        """
-
         # converts to ms
         delta = (current_time - flow.last_update) * 1000
         if delta > self.timeout:
@@ -239,6 +252,9 @@ class FlowTable:
             return False
     
     def all_timeout(self, current_time):
+        """
+        Iterates through the flow table and checks for timeout.
+        """
         expired = []
 
         for id, flow in self.table.items():
@@ -249,7 +265,6 @@ class FlowTable:
             self.deactivate_flow(id)
 
     def get_max_packets_flow(self):
-        
         if len(self.table.values()) > 0:
             max_flow = max(self.table.values(), key=lambda x : x.rules[-1].packets_count)
             return max_flow.rules[-1].packets_count
@@ -273,12 +288,10 @@ class Flow:
         self.last_update = None
         self.active = True # if timeout, mark inactive
         self.rules = []
-        self.missed = 0
 
     def create_rule(self, create_time):
         rule = Rule(create_time)
         self.rules.append(rule)
-        self.missed += 1 # everytime a new rule created means there is one missed
 
         return rule
 
@@ -286,10 +299,13 @@ class Flow:
         '''Get hit rate of individual flow'''
 
         total = 0
+        # only when a packet missed, an rule will be added
+        missed = len(self.rules)
         for r in self.rules:
             total += r.packets_count
 
-        return float((total - self.missed) / total)
+
+        return float((total - missed) / total)
         
 
 class Rule:
