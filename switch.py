@@ -267,20 +267,29 @@ class FlowTable:
 
 
 
-
-
 class Flow:
     def __init__(self, id):
         self.id = id # Rule, souce_ip + dst_ip + src_port + dst_port
         self.last_update = None
         self.active = True # if timeout, mark inactive
         self.rules = []
+        self.missed = 0
 
     def create_rule(self, create_time):
         rule = Rule(create_time)
         self.rules.append(rule)
+        self.missed += 1 # everytime a new rule created means there is one missed
 
         return rule
+
+    def get_hit_rate(self):
+        '''Get hit rate of individual flow'''
+
+        total = 0
+        for r in self.rules:
+            total += r.packets_count
+
+        return float((total - self.missed) / total)
         
 
 class Rule:
