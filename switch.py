@@ -49,7 +49,8 @@ class Switch:
         self.id = id
         self.flow_table = FlowTable(timeout)
         self.current_time = 0
-        self.dump_interval = timeout # should be same as timeout
+        # should be same as timeout if it's less than 100
+        self.dump_interval = timeout if timeout < 100 else 100 
         # last time statistic dump time
         # also used for check for timeout
         self.last_dump_time = 0 
