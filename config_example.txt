@@ -1,6 +1,7 @@
 # this is a comment
 # common properties are not in blocks
 trace_path=./tracefiles/ # comment?
+reference_on=true
 num_switches=2
 
 
@@ -12,6 +13,7 @@ num_switches=2
 condition
 id=SW1
 timeout=10
+to_file=true # output result to to_file
 
 condition_end
 
