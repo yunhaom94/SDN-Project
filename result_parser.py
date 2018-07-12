@@ -57,11 +57,21 @@ Medium: {af_med}
 99th percentile: {af_99}
 95th percentile: {af_95}
 
+Hit Rate Stats: 
+Mean: {hr_mean}
+Medium: {hr_med}
+99th percentile: {hr_99}
+95th percentile: {hr_95}
+
     '''.format(
         af_mean=np.mean(all_active_flows),
         af_med=np.median(all_active_flows),
         af_99=np.percentile(all_active_flows, 99),
-        af_95=np.percentile(all_active_flows, 95)
+        af_95=np.percentile(all_active_flows, 95),
+        hr_mean=np.mean(all_hit_rate),
+        hr_med=np.median(all_hit_rate),
+        hr_99=np.percentile(all_hit_rate, 99),
+        hr_95=np.percentile(all_hit_rate, 95)
     )
 
     csvfile.write(ohter_stats)
