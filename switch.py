@@ -280,6 +280,23 @@ class FlowTable:
         
         return flow
 
+    def output_all_flow(self, to_file):
+        out_str = ""
+        for flow in self.table:
+            flow_stats = '''
+Flow id: {flow_id}
+Total number of Rules: {num_rules}
+Flow Hit Rate: {hit_rate}
+*
+            '''.format(flow_id=flow.id,
+            num_rules=len(flow.rules),
+            hit_rate=flow.get_hit_rate)
+
+            out_str += flow_stats
+
+        return out_str
+
+
 
 
 class Flow:
