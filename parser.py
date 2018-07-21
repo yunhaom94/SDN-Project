@@ -167,6 +167,11 @@ def main(config_file):
             process_pcap_file(full_path, switches)
         
         #break
+
+    for sw in switches:
+        print(sw.output_all_flow())
+
+
     print("Done")
     
     return 

@@ -165,6 +165,8 @@ Maximum Number of Installed Rules At a Time: {max_flow_count}
             print(output_str)
 
 
+    def output_all_flow(self, to_file=True):
+        self.flow_table.output_all_flow(self.id, to_file)
 
 
 class FlowTable:
@@ -280,9 +282,9 @@ class FlowTable:
         
         return flow
 
-    def output_all_flow(self, to_file):
+    def output_all_flow(self, switch_id, to_file):
         out_str = ""
-        for flow in self.table:
+        for id, flow in self.table.items():
             flow_stats = '''
 Flow id: {flow_id}
 Total number of Rules: {num_rules}
@@ -290,11 +292,18 @@ Flow Hit Rate: {hit_rate}
 *
             '''.format(flow_id=flow.id,
             num_rules=len(flow.rules),
-            hit_rate=flow.get_hit_rate)
+            hit_rate=flow.get_hit_rate())
 
             out_str += flow_stats
 
-        return out_str
+        if to_file:
+            filename = "log_flow_" + str(switch_id)            
+            with open(filename, "w+")  as out_file:
+                out_file.write(out_str)
+                out_file.close()
+        
+        else:
+            print(out_str)
 
 
 
