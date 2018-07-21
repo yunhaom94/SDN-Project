@@ -156,8 +156,9 @@ def main(config_file):
     switches = Config.create_switches(settings)
     path = settings["trace_path"]
     ref_switch = Switch("reference", 1000000, True)
-    switches.append(ref_switch)
+    #switches.append(ref_switch)
 
+    # This part can be paralleled by putting each switch into different threads
     for file in os.listdir(path):
         ext = os.path.splitext(file)[1]
 
@@ -191,9 +192,3 @@ if __name__ == '__main__':
     Output.DEBUG_ON = args.debug
 
     main(config_file)
-
-'''
-TODO:
-1. per flow hit ratio (the hit ratio of each individual flow). 
-2. # of rules per flow installed
-'''
