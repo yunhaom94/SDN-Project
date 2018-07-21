@@ -102,20 +102,19 @@ class Switch:
         elif packet.ip_protocol == IP_PROTOCOL.UDP: # udp
             udp =  ip.data
         else:
+            Output.VERBOSE("Not TCP or UDP")
             return
 
 
         if tcp and type(tcp) == dpkt.tcp.TCP:
-            packet.tcp_sport = tcp.sport
-            packet.tcp_dport = tcp.dport
+            packet.sport = tcp.sport
+            packet.dport = tcp.dport
         elif udp and type(udp) == dpkt.udp.UDP:
-            packet.udp_dport = udp.dport
-            packet.udp_sport = udp.dport
+            packet.sport = udp.sport
+            packet.dport = udp.dport
         else:
-            Output.VERBOSE("Not TCP or UDP")
             return
         
-        #packet.print_packet()
 
         id = packet.get_id()
 
@@ -241,7 +240,7 @@ class FlowTable:
         if not self.if_flow_exists(id):
             raise Exception("Flow does not exist")
         
-        self.table[id].active = False
+        self.table[id].deactivate_flow()
         self.current_active_flow -= 1
 
     def check_timeout(self, flow, current_time):
@@ -276,25 +275,26 @@ class FlowTable:
 
     def create_flow(self, packet):
         id = packet.get_id()
-        flow = Flow(id)
-        flow.last_update = packet.timestamp
-        flow.active = False
+        flow = Flow(id, packet.ip_src, packet.ip_dst, packet.ip_protocol,
+                    packet.sport, packet.dport, packet.timestamp)
+
+        flow.deactivate_flow()
         
         return flow
 
     def output_all_flow(self, switch_id, to_file):
         out_str = ""
+
         for id, flow in self.table.items():
+            
             flow_stats = '''
-Flow id: {flow_id}
 Total number of Rules: {num_rules}
 Flow Hit Rate: {hit_rate}
 *
-            '''.format(flow_id=flow.id,
-            num_rules=len(flow.rules),
+            '''.format(num_rules=len(flow.rules),
             hit_rate=flow.get_hit_rate())
 
-            out_str += flow_stats
+            out_str += (flow.output_info() + flow_stats)
 
         if to_file:
             filename = "log_flow_" + str(switch_id)            
@@ -309,11 +309,19 @@ Flow Hit Rate: {hit_rate}
 
 
 class Flow:
-    def __init__(self, id):
-        self.id = id # Rule, souce_ip + dst_ip + src_port + dst_port
-        self.last_update = None
+    def __init__(self, id, ip_src, ip_dst, ip_protocol, sport, dport, cur_time):
+        self.id = id # Rule, souce_ip + ip_dst + portocol + sport + dport
+        self.ip_src = ip_src
+        self.ip_dst = ip_dst
+        self.ip_protocol = ip_protocol
+        self.sport = sport
+        self.dport = dport
+        self.last_update = cur_time
         self.active = True # if timeout, mark inactive
         self.rules = []
+
+    def deactivate_flow(self):
+        self.active = False
 
     def create_rule(self, create_time):
         rule = Rule(create_time)
@@ -332,6 +340,29 @@ class Flow:
 
 
         return float((total - missed) / total)
+
+    def output_info(self):
+        '''return a string of self's info'''
+        if self.ip_protocol == IP_PROTOCOL.TCP:
+            portocol = "TCP" 
+        elif self.ip_protocol == IP_PROTOCOL.UDP:
+            portocol = "UDP"
+            
+        out_str = '''
+Flow id: {flow_id}
+Source IP: {ip_src}
+Dest IP: {dest_ip}
+IP portocol: {portocol}
+Src port: {sport}
+Dest port: {dport}
+            '''.format(flow_id=self.id,
+            ip_src=inet_to_str(self.ip_src),
+            dest_ip=inet_to_str(self.ip_dst),
+            portocol=portocol,
+            sport=self.sport,
+            dport=self.dport)
+
+        return out_str
         
 
 class Rule:
@@ -350,21 +381,16 @@ class Packet:
         self.ip_src = None
         self.ip_dst = None
         self.ip_protocol = None
-        self.tcp_sport = None
-        self.tcp_dport = None
-        self.udp_sport = None
-        self.udp_dport = None
+        self.sport = None
+        self.dport = None
+
         self.size = 0
         #Output.DEBUG(func=self.print_packet)
     
     def get_id(self):
-        ports = ""
-        if self.ip_protocol == IP_PROTOCOL.TCP:
-            ports = str(self.tcp_sport) + str(self.tcp_dport)
-        elif self.ip_protocol == IP_PROTOCOL.UDP:
-            ports = str(self.udp_dport) + str(self.udp_sport)
 
-        return "" + str(self.ip_src) + str(self.ip_dst) + ports
+        return "" + str(self.ip_src) + str(self.ip_dst) + \
+                  str(self.ip_protocol) + str(self.sport) + str(self.dport)
     
     def print_packet(self):
         print("Packet with ID: " + self.get_id())
@@ -373,7 +399,6 @@ class Packet:
         print("Source IP: " + inet_to_str(self.ip_src))
         print("Dest IP: " + inet_to_str(self.ip_dst))
         print("Protocol: " + str(self.ip_protocol))
-        print("TCP Source port: " + str(self.tcp_sport))
-        print("TCP Dest port: " + str(self.tcp_dport))
-
+        print("Source port: " + str(self.sport))
+        print("Dest port: " + str(self.dport))
 
