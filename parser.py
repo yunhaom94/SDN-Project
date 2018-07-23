@@ -9,128 +9,72 @@ from switch import Switch
 import os
 from helpers import Output
 import argparse
+import configparser
 
 
 
 
 class Config():
-    _COMMON_OPTIONS = [
-        "trace_path",
-        "num_switches",
-        "dump_interval"
+    def __init__(self, config_file_path):
+        self.config_file_path = config_file_path
         
-    ]
+    def parse_config_file(self):
 
-    _SWITCH_OPTIONS = [
-        "timeout",
-        "id",
-        "active",
-        "to_file" 
-    ]
+        self.config = configparser.ConfigParser(inline_comment_prefixes="#")
+        self.config.read(self.config_file_path)
+        self.verify_config()
 
+        self.trace_path = self.config["COMMON"]["trace_path"]
 
-    def __init__(self):
-        self.trace_file_path = None
-        self.num_switches = 0
-        self.switches = []
+        self.num_switches = 9999 # default number is 9999
+        if self.config.has_option("COMMON", "num_switches"):
+            self.num_switches = int(self.config["COMMON"]["num_switches"])
 
 
-    @staticmethod
-    def parse_config_file(config_file_path):
+        self.reference_on = False
+        if self.config.has_option("COMMON", "reference_on"):
+            self.reference_on = self.config["COMMON"].getboolean("reference_on")
 
-        settings = {}
 
-        i = 0
 
-        with open(config_file_path, "r") as fp:
-            line = fp.readline()
+    def verify_config(self):
+        if self.config:
+            if "COMMON" not in self.config.sections():
+                raise Exception("No COMMON section in config file")
 
-            in_block = None
+            if not self.config.has_option("COMMON", "trace_path"):
+                raise Exception("trace_path option must exists in COMMON section")
 
-            while line:
-                # if comment
-                if line[0] == '#':
-                    line = fp.readline()
-                    continue    
 
-                line = line.split('#')[0].lower() # if comment in the back
-                # common settings
+    def create_switches(self):
+        '''
+        Create switches with definition in the config file
+        '''
 
-                if not in_block:
-                    option = line.split("=")
-                    if option[0].strip() in Config._COMMON_OPTIONS:
-                        settings[option[0]] = option[1].strip()
-                        line = fp.readline()
-                        continue
-                    
-
-                elif in_block:
-                    option = line.split("=")
-                    if option[0].strip() in Config._SWITCH_OPTIONS:
-                        settings[i][option[0]]  = option[1].strip()
-                        line = fp.readline()
-                        continue
-
-                if line.strip() == "condition":
-                    if not in_block:
-                        in_block = True
-                        settings[i] = {}
-                        line = fp.readline()
-                        continue
-                    else:
-                        raise Exception("Config: block not closed")
-
-                    
-                
-                if line.strip() == "condition_end":
-                    if in_block:
-                        in_block = False  
-                        line = fp.readline()
-                        i = i + 1
-                        continue
-                    else:
-                        raise Exception("Config: not in block")
-                
-                line = fp.readline()
-                continue
-
-        return settings
-                
-    @staticmethod
-    def create_switches(settings):
         switches = []
-        try:
-            num_switches = int(settings['num_switches'])
-        except KeyError:
-            num_switches = 9999 #if not provide, just parse all conditions
-        except ValueError:
-            raise Exception("num_switches provided is not a number!")
-        
-        Output.VERBOSE("a total number of " + str(num_switches) + " switches will be created")
+        for name in self.config.sections():
+            if name != "COMMON":
+                sid = name
 
-        for k, v in settings.items():
-            if num_switches <= 0:
-                break
-            
-            if k not in Config._COMMON_OPTIONS:
-                if "id" in v.keys():
-                    sid = v["id"]
-                else:
-                    sid = k
+                if self.config.has_option(name, "active"):
+                    if not self.config[name].getboolean("to_file"):
+                        continue
 
-                to_file = False
+                if not self.config.has_option(name, "timeout"):
+                    raise Exception("switch doesn't have timeout set")
+
+                timeout = int(self.config[name]["timeout"])
                 
-                if "to_file" in v.keys():
-                    if v["to_file"].strip().lower() == "true":
-                        to_file = True
+                to_file = True
+                if self.config.has_option(name, "to_file"):
+                    to_file = self.config[name].getboolean("to_file")
 
-                    
+                sw = Switch(sid, timeout, to_file)
+                switches.append(sw)
 
+                if len(switches) > self.num_switches:
+                    break
 
-                timeout = int(v["timeout"])
-                switch = Switch(sid, timeout, to_file)
-                switches.append(switch)
-                num_switches -= 1
 
         return switches
             
@@ -151,12 +95,15 @@ def process_pcap_file(pcap_file_name, switches):
         
 
 def main(config_file):
-    settings = Config.parse_config_file(config_file)
+    config = Config(config_file)
+    config.parse_config_file()
+    switches = config.create_switches()
 
-    switches = Config.create_switches(settings)
-    path = settings["trace_path"]
-    ref_switch = Switch("reference", 1000000, True)
-    #switches.append(ref_switch)
+    path = config.trace_path
+
+    if config.reference_on:
+        ref_switch = Switch("reference", 1000000, True)
+        switches.append(ref_switch)
 
     # This part can be paralleled by putting each switch into different threads
     for file in os.listdir(path):

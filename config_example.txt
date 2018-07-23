@@ -1,24 +1,20 @@
 # this is a comment
-# common properties are not in blocks
-trace_path=./tracefiles/ # comment?
-reference_on=true
-num_switches=2
+
+[COMMON] # you must have a [COMMON] section
+trace_path=./tracefiles/ # you must have a trace_path field
+reference_on=True # optional, default false
+num_switches=2 # optional, will only create maximum number of switch defined here, default 9999
 
 
-# condition 
-# ...
-# condition_end
-# blocks are used to define properties of a switch
-# switch 1 profile
-condition
-id=SW1
-timeout=10
-to_file=true # output result to to_file
+# any section other than [COMMON] is a switch
+# name of the section is ID
+[SW1]
+timeout=10 # you must have this, used for base timeout
+to_file=true # optional, output result to to_file, default true
+active=false # optional, default true
 
-condition_end
 
 # switch 2 profile
-condition
+[SW2]
 timeout=100
 
-condition_end
