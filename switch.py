@@ -3,6 +3,7 @@ import socket
 from datetime import datetime
 import operator
 from helpers import Output
+import random
 
 #### HELPER FUNCTIONS FROM 
 #### http://dpkt.readthedocs.io/en/latest/_modules/examples/print_packets.html#mac_addr
@@ -47,7 +48,7 @@ class IP_PROTOCOL():
 class Switch:
     def __init__(self, id, timeout, to_file):
         self.id = id
-        self.flow_table = FlowTable(timeout)
+        self.flow_table = BaseFlowTable(timeout)
         self.current_time = 0
         # should be same as timeout if it's less than 100
         self.dump_interval = timeout if timeout < 100 else 100 
@@ -168,7 +169,11 @@ Maximum Number of Installed Rules At a Time: {max_flow_count}
         self.flow_table.output_all_flow(self.id, to_file)
 
 
-class FlowTable:
+class BaseFlowTable:
+    '''
+    Most basic flow table
+    With 1 dictionary and fixed timeout
+    '''
     def __init__(self, timeout):
         self.table = {}
         self.timeout = timeout
@@ -305,7 +310,78 @@ Flow Hit Rate: {hit_rate}
         else:
             print(out_str)
 
+class TwoLevelFlowTalbe(BaseFlowTable):
+    def __init__(self, timeout, secondary_table_size=10):
+        super().__init__(self, timeout)
+        self.secondary_table = {}
+        self.secondary_table_size = secondary_table_size
+        self.secondary_table_occupancy = 0
+        # this should be able to modify easily
+        self.eviction_policy = self.random_eviction
 
+    def deactivate_flow(self, id):
+        super().deactivate_flow(id)
+        self.push_secondary(id) # push to secdonary table
+
+
+    def non_existing_flow(self, packet):
+        '''
+        Handles cases where a flow DNE.
+        Create a new flow and added to flow table then
+        call the existing flow handler
+        '''
+
+        id = packet.get_id()
+        if self.if_flow_exists(id):
+            raise Exception("Flow exists")
+
+        if self.if_seccondary_exists(id):
+            flow = self.secondary_table[id]
+            self.table[id] = flow
+            flow.active = True
+            self.existing_flow(packet)
+
+        else:
+            super.non_existing_flow(id)
+        
+
+    def if_seccondary_exists(self, id):
+        if id in self.secondary_table.keys():
+            return True
+        else:
+            return False
+
+
+    def push_secondary(self, id):
+        if self.secondary_table_occupancy > self.secondary_table_size:
+            self.eviction_policy()
+
+        self.secondary_table[id] = self.table[id]
+        self.secondary_table_occupancy += 1
+
+
+        
+    def random_eviction(self):
+        i = random.randint(0, self.secondary_table_occupancy) - 1
+        evicted = self.secondary_table.keys()[i]
+        del self.secondary_table[evicted]
+        self.secondary_table_occupancy -= 1
+
+
+    def LRU(self):
+        # TODO
+        pass
+
+    def LFU(self):
+        # TODO
+        pass
+
+
+
+    # TODO: add more eviction methods
+
+
+    
 
 
 class Flow:
