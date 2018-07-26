@@ -48,7 +48,7 @@ class IP_PROTOCOL():
 class Switch:
     def __init__(self, id, timeout, to_file):
         self.id = id
-        self.flow_table = BaseFlowTable(timeout)
+        self.flow_table = TwoLevelFlowTalbe(timeout)
         self.current_time = 0
         # should be same as timeout if it's less than 100
         self.dump_interval = timeout if timeout < 100 else 100 
@@ -312,7 +312,7 @@ Flow Hit Rate: {hit_rate}
 
 class TwoLevelFlowTalbe(BaseFlowTable):
     def __init__(self, timeout, secondary_table_size=10):
-        super().__init__(self, timeout)
+        super().__init__(timeout)
         self.secondary_table = {}
         self.secondary_table_size = secondary_table_size
         self.secondary_table_occupancy = 0
@@ -342,7 +342,7 @@ class TwoLevelFlowTalbe(BaseFlowTable):
             self.existing_flow(packet)
 
         else:
-            super.non_existing_flow(id)
+            super().non_existing_flow(packet)
         
 
     def if_seccondary_exists(self, id):
@@ -362,8 +362,7 @@ class TwoLevelFlowTalbe(BaseFlowTable):
 
         
     def random_eviction(self):
-        i = random.randint(0, self.secondary_table_occupancy) - 1
-        evicted = self.secondary_table.keys()[i]
+        evicted = random.choice(list(self.secondary_table))
         del self.secondary_table[evicted]
         self.secondary_table_occupancy -= 1
 
