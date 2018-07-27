@@ -44,11 +44,13 @@ class IP_PROTOCOL():
     UDP = 17
     
 
+
+
 # the class to simulate a switch
 class Switch:
-    def __init__(self, id, timeout, to_file):
+    def __init__(self, id, timeout, to_file, **kwargs):
         self.id = id
-        self.flow_table = TwoLevelFlowTalbe(timeout)
+        
         self.current_time = 0
         # should be same as timeout if it's less than 100
         self.dump_interval = timeout if timeout < 100 else 100 
@@ -59,6 +61,14 @@ class Switch:
         self.first_write = True # used to check for writing logs to file
         self.missed = 0 # # of packets that needs to create a new flow for it
         self.output_to_file = to_file
+
+        self.flow_table = BaseFlowTable(timeout) # default flow table
+        if "rule" in kwargs.keys():
+            rule = kwargs["rule"]
+            if rule == "two_level_random":
+                print("Switch {id} using two_level_random rule".format(id=self.id))
+                self.flow_table = TwoLevelFlowTable(timeout, 1)
+                
 
     def process_packet(self, timestamp, raw_packet):
         '''
@@ -310,14 +320,17 @@ Flow Hit Rate: {hit_rate}
         else:
             print(out_str)
 
-class TwoLevelFlowTalbe(BaseFlowTable):
-    def __init__(self, timeout, secondary_table_size=10):
+class TwoLevelFlowTable(BaseFlowTable):
+    def __init__(self, timeout, eviction_policy, secondary_table_size=10):
         super().__init__(timeout)
         self.secondary_table = {}
         self.secondary_table_size = secondary_table_size
         self.secondary_table_occupancy = 0
         # this should be able to modify easily
-        self.eviction_policy = self.random_eviction
+        if eviction_policy == 1:
+            self.eviction_policy = self.random_eviction
+        else:
+            self.eviction_policy = self.random_eviction
 
     def deactivate_flow(self, id):
         super().deactivate_flow(id)
@@ -378,9 +391,6 @@ class TwoLevelFlowTalbe(BaseFlowTable):
 
 
     # TODO: add more eviction methods
-
-
-    
 
 
 class Flow:

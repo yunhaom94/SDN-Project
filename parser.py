@@ -55,21 +55,26 @@ class Config():
         for name in self.config.sections():
             if name != "COMMON":
                 sid = name
+                
+                other_options = dict(self.config.items(sid, vars))
 
                 if self.config.has_option(name, "active"):
+                    del other_options["active"]
                     if not self.config[name].getboolean("to_file"):
                         continue
-
+                 
                 if not self.config.has_option(name, "timeout"):
                     raise Exception("switch doesn't have timeout set")
 
+                del other_options["timeout"]
                 timeout = int(self.config[name]["timeout"])
                 
                 to_file = True
                 if self.config.has_option(name, "to_file"):
+                    del other_options["to_file"]
                     to_file = self.config[name].getboolean("to_file")
 
-                sw = Switch(sid, timeout, to_file)
+                sw = Switch(sid, timeout, to_file, **other_options)
                 switches.append(sw)
 
                 if len(switches) > self.num_switches:

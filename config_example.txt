@@ -13,6 +13,10 @@ timeout=10 # you must have this, used for base timeout
 to_file=true # optional, output result to to_file, default true
 active=false # optional, default true
 
+# optional, default or incorrect value set to BaseFlowTable
+# Available options:
+# - two_level_random
+rule=two_level_random 
 
 # switch 2 profile
 [SW2]
