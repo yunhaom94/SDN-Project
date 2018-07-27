@@ -4,6 +4,7 @@ from datetime import datetime
 import operator
 from helpers import Output
 import random
+import collections
 
 #### HELPER FUNCTIONS FROM 
 #### http://dpkt.readthedocs.io/en/latest/_modules/examples/print_packets.html#mac_addr
@@ -50,7 +51,7 @@ class IP_PROTOCOL():
 class Switch:
     def __init__(self, id, timeout, to_file, **kwargs):
         self.id = id
-        
+        print("Running Switch: " + self.id)
         self.current_time = 0
         # should be same as timeout if it's less than 100
         self.dump_interval = timeout if timeout < 100 else 100 
@@ -66,8 +67,10 @@ class Switch:
         if "rule" in kwargs.keys():
             rule = kwargs["rule"]
             if rule == "two_level_random":
-                print("Switch {id} using two_level_random rule".format(id=self.id))
                 self.flow_table = TwoLevelFlowTable(timeout, 1)
+
+            elif rule == "two_level_fifo":
+                self.flow_table = TwoLevelFlowTable(timeout, 2)
                 
 
     def process_packet(self, timestamp, raw_packet):
@@ -323,18 +326,24 @@ Flow Hit Rate: {hit_rate}
 class TwoLevelFlowTable(BaseFlowTable):
     def __init__(self, timeout, eviction_policy, secondary_table_size=10):
         super().__init__(timeout)
-        self.secondary_table = {}
+        self.secondary_table = collections.OrderedDict()
         self.secondary_table_size = secondary_table_size
         self.secondary_table_occupancy = 0
         # this should be able to modify easily
+                        
         if eviction_policy == 1:
+            print("Using two_level_random rule")
             self.eviction_policy = self.random_eviction
+        if eviction_policy == 2:
+            print("Using two_level_fifo rule")
+            self.eviction_policy = self.FIFO
         else:
+            print("Using two_level_random rule")
             self.eviction_policy = self.random_eviction
 
     def deactivate_flow(self, id):
         super().deactivate_flow(id)
-        self.push_secondary(id) # push to secdonary table
+        self.push_secondary(id) # push to secondary table
 
 
     def non_existing_flow(self, packet):
@@ -348,7 +357,7 @@ class TwoLevelFlowTable(BaseFlowTable):
         if self.if_flow_exists(id):
             raise Exception("Flow exists")
 
-        if self.if_seccondary_exists(id):
+        if self.if_secondary_exists(id):
             flow = self.secondary_table[id]
             self.table[id] = flow
             flow.active = True
@@ -358,7 +367,7 @@ class TwoLevelFlowTable(BaseFlowTable):
             super().non_existing_flow(packet)
         
 
-    def if_seccondary_exists(self, id):
+    def if_secondary_exists(self, id):
         if id in self.secondary_table.keys():
             return True
         else:
@@ -380,14 +389,9 @@ class TwoLevelFlowTable(BaseFlowTable):
         self.secondary_table_occupancy -= 1
 
 
-    def LRU(self):
-        # TODO
-        pass
-
-    def LFU(self):
-        # TODO
-        pass
-
+    def FIFO(self):
+        self.secondary_table.popitem(last=False)
+        self.secondary_table_occupancy -= 1
 
 
     # TODO: add more eviction methods
