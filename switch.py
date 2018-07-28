@@ -82,7 +82,6 @@ class Switch:
         self.current_time = timestamp
         self.total_packets += 1
 
-
         if (self.current_time - self.last_dump_time) * 1000 > self.dump_interval:
             self.flow_table.all_timeout(self.current_time)
             self.output_statistics(self.output_to_file)
@@ -100,6 +99,7 @@ class Switch:
             return
 
         packet = Packet(timestamp)
+        packet.size = len(raw_packet)
 
         packet.eth_src = eth.src
         packet.eth_dst = eth.dst
@@ -147,7 +147,6 @@ Total Number of Packets Processed: {total_packet}
 Timeout Set to: {timeout}
 Currently Active Flows: {active_flow}
 Maximum Number of Packets In Active Flows: {max_packets}
-Maximum Number of Bytes In Active Flows: {max_bytes}
 Total Number of Rules Ever Installed: {total_rules}
 Overall Hit Ratio: {hit_ratio}
 Maximum Number of Installed Rules At a Time: {max_flow_count}
@@ -159,7 +158,6 @@ Maximum Number of Installed Rules At a Time: {max_flow_count}
         total_rules=str(self.flow_table.total_rules),\
         max_flow_count=str(self.flow_table.max_flow_count),\
         max_packets=str(self.flow_table.get_max_packets_flow()),\
-        max_bytes="TODO",\
         hit_ratio=hit_ratio)
         
         if to_file:
@@ -228,10 +226,12 @@ class BaseFlowTable:
             Output.DEBUG("Added new rule")
 
         flow.last_update = packet.timestamp
-        latest_rule.last_update = packet.timestamp
-        latest_rule.packets_count += 1
+        latest_rule.new_packet(packet)
         
         self.table[id] = flow
+
+        if self.current_active_flow > self.max_flow_count:
+            self.max_flow_count = self.current_active_flow
 
 
     def non_existing_flow(self, packet):
@@ -305,12 +305,17 @@ class BaseFlowTable:
 
         for id, flow in self.table.items():
             
-            flow_stats = '''
+            flow_stats = \
+'''
 Total number of Rules: {num_rules}
+Total backets: {packets_count}
+Total bytes: {byte_count}
 Flow Hit Rate: {hit_rate}
 *
             '''.format(num_rules=len(flow.rules),
-            hit_rate=flow.get_hit_rate())
+            hit_rate=flow.get_hit_rate(),
+            packets_count=flow.get_packet_count(),
+            byte_count=flow.get_byte_count())
 
             out_str += (flow.output_info() + flow_stats)
 
@@ -418,17 +423,29 @@ class Flow:
 
         return rule
 
-    def get_hit_rate(self):
-        '''Get hit rate of individual flow'''
-
+    def get_packet_count(self):
         total = 0
-        # only when a packet missed, an rule will be added
-        missed = len(self.rules)
         for r in self.rules:
             total += r.packets_count
 
+        return total
 
-        return float((total - missed) / total)
+    def get_byte_count(self):
+        total = 0
+
+        for r in self.rules:
+            total += r.byte_count
+
+        return total
+
+    def get_hit_rate(self):
+        '''Get hit rate of individual flow'''
+
+        # only when a packet missed, an rule will be added
+        missed = len(self.rules)
+        packets_count = self.get_packet_count()
+
+        return float((packets_count - missed) / packets_count)
 
     def output_info(self):
         '''return a string of self's info'''
@@ -460,6 +477,12 @@ class Rule:
         self.byte_count = 0
         self.first_seen = first_seen  
         self.last_update = None
+
+    def new_packet(self, packet):
+        self.last_update = packet.timestamp
+        self.packets_count += 1
+        self.byte_count += packet.size
+
 
 class Packet:
     def __init__(self, timestamp):
