@@ -4,6 +4,7 @@ from datetime import datetime
 import operator
 from helpers import Output
 import random
+import collections
 
 #### HELPER FUNCTIONS FROM 
 #### http://dpkt.readthedocs.io/en/latest/_modules/examples/print_packets.html#mac_addr
@@ -50,7 +51,7 @@ class IP_PROTOCOL():
 class Switch:
     def __init__(self, id, timeout, to_file, **kwargs):
         self.id = id
-        
+        print("Running Switch: " + self.id)
         self.current_time = 0
         # should be same as timeout if it's less than 100
         self.dump_interval = timeout if timeout < 100 else 100 
@@ -66,8 +67,10 @@ class Switch:
         if "rule" in kwargs.keys():
             rule = kwargs["rule"]
             if rule == "two_level_random":
-                print("Switch {id} using two_level_random rule".format(id=self.id))
                 self.flow_table = TwoLevelFlowTable(timeout, 1)
+
+            elif rule == "two_level_fifo":
+                self.flow_table = TwoLevelFlowTable(timeout, 2)
                 
 
     def process_packet(self, timestamp, raw_packet):
@@ -78,7 +81,6 @@ class Switch:
         Output.VERBOSE(datetime.utcfromtimestamp(timestamp))
         self.current_time = timestamp
         self.total_packets += 1
-
 
         if (self.current_time - self.last_dump_time) * 1000 > self.dump_interval:
             self.flow_table.all_timeout(self.current_time)
@@ -97,6 +99,7 @@ class Switch:
             return
 
         packet = Packet(timestamp)
+        packet.size = len(raw_packet)
 
         packet.eth_src = eth.src
         packet.eth_dst = eth.dst
@@ -144,7 +147,6 @@ Total Number of Packets Processed: {total_packet}
 Timeout Set to: {timeout}
 Currently Active Flows: {active_flow}
 Maximum Number of Packets In Active Flows: {max_packets}
-Maximum Number of Bytes In Active Flows: {max_bytes}
 Total Number of Rules Ever Installed: {total_rules}
 Overall Hit Ratio: {hit_ratio}
 Maximum Number of Installed Rules At a Time: {max_flow_count}
@@ -156,7 +158,6 @@ Maximum Number of Installed Rules At a Time: {max_flow_count}
         total_rules=str(self.flow_table.total_rules),\
         max_flow_count=str(self.flow_table.max_flow_count),\
         max_packets=str(self.flow_table.get_max_packets_flow()),\
-        max_bytes="TODO",\
         hit_ratio=hit_ratio)
         
         if to_file:
@@ -225,10 +226,12 @@ class BaseFlowTable:
             Output.DEBUG("Added new rule")
 
         flow.last_update = packet.timestamp
-        latest_rule.last_update = packet.timestamp
-        latest_rule.packets_count += 1
+        latest_rule.new_packet(packet)
         
         self.table[id] = flow
+
+        if self.current_active_flow > self.max_flow_count:
+            self.max_flow_count = self.current_active_flow
 
 
     def non_existing_flow(self, packet):
@@ -302,12 +305,17 @@ class BaseFlowTable:
 
         for id, flow in self.table.items():
             
-            flow_stats = '''
+            flow_stats = \
+'''
 Total number of Rules: {num_rules}
+Total packets: {packets_count}
+Total bytes: {byte_count}
 Flow Hit Rate: {hit_rate}
 *
             '''.format(num_rules=len(flow.rules),
-            hit_rate=flow.get_hit_rate())
+            hit_rate=flow.get_hit_rate(),
+            packets_count=flow.get_packet_count(),
+            byte_count=flow.get_byte_count())
 
             out_str += (flow.output_info() + flow_stats)
 
@@ -323,18 +331,24 @@ Flow Hit Rate: {hit_rate}
 class TwoLevelFlowTable(BaseFlowTable):
     def __init__(self, timeout, eviction_policy, secondary_table_size=10):
         super().__init__(timeout)
-        self.secondary_table = {}
+        self.secondary_table = collections.OrderedDict()
         self.secondary_table_size = secondary_table_size
         self.secondary_table_occupancy = 0
         # this should be able to modify easily
+                        
         if eviction_policy == 1:
+            print("Using two_level_random rule")
             self.eviction_policy = self.random_eviction
+        if eviction_policy == 2:
+            print("Using two_level_fifo rule")
+            self.eviction_policy = self.FIFO
         else:
+            print("Using two_level_random rule")
             self.eviction_policy = self.random_eviction
 
     def deactivate_flow(self, id):
         super().deactivate_flow(id)
-        self.push_secondary(id) # push to secdonary table
+        self.push_secondary(id) # push to secondary table
 
 
     def non_existing_flow(self, packet):
@@ -348,7 +362,7 @@ class TwoLevelFlowTable(BaseFlowTable):
         if self.if_flow_exists(id):
             raise Exception("Flow exists")
 
-        if self.if_seccondary_exists(id):
+        if self.if_secondary_exists(id):
             flow = self.secondary_table[id]
             self.table[id] = flow
             flow.active = True
@@ -358,7 +372,7 @@ class TwoLevelFlowTable(BaseFlowTable):
             super().non_existing_flow(packet)
         
 
-    def if_seccondary_exists(self, id):
+    def if_secondary_exists(self, id):
         if id in self.secondary_table.keys():
             return True
         else:
@@ -380,14 +394,9 @@ class TwoLevelFlowTable(BaseFlowTable):
         self.secondary_table_occupancy -= 1
 
 
-    def LRU(self):
-        # TODO
-        pass
-
-    def LFU(self):
-        # TODO
-        pass
-
+    def FIFO(self):
+        self.secondary_table.popitem(last=False)
+        self.secondary_table_occupancy -= 1
 
 
     # TODO: add more eviction methods
@@ -414,36 +423,48 @@ class Flow:
 
         return rule
 
-    def get_hit_rate(self):
-        '''Get hit rate of individual flow'''
-
+    def get_packet_count(self):
         total = 0
-        # only when a packet missed, an rule will be added
-        missed = len(self.rules)
         for r in self.rules:
             total += r.packets_count
 
+        return total
 
-        return float((total - missed) / total)
+    def get_byte_count(self):
+        total = 0
+
+        for r in self.rules:
+            total += r.byte_count
+
+        return total
+
+    def get_hit_rate(self):
+        '''Get hit rate of individual flow'''
+
+        # only when a packet missed, an rule will be added
+        missed = len(self.rules)
+        packets_count = self.get_packet_count()
+
+        return float((packets_count - missed) / packets_count)
 
     def output_info(self):
         '''return a string of self's info'''
         if self.ip_protocol == IP_PROTOCOL.TCP:
-            portocol = "TCP" 
+            protocol = "TCP" 
         elif self.ip_protocol == IP_PROTOCOL.UDP:
-            portocol = "UDP"
+            protocol = "UDP"
             
         out_str = '''
 Flow id: {flow_id}
 Source IP: {ip_src}
 Dest IP: {dest_ip}
-IP portocol: {portocol}
+IP protocol: {protocol}
 Src port: {sport}
 Dest port: {dport}
             '''.format(flow_id=self.id,
             ip_src=inet_to_str(self.ip_src),
             dest_ip=inet_to_str(self.ip_dst),
-            portocol=portocol,
+            protocol=protocol,
             sport=self.sport,
             dport=self.dport)
 
@@ -456,6 +477,12 @@ class Rule:
         self.byte_count = 0
         self.first_seen = first_seen  
         self.last_update = None
+
+    def new_packet(self, packet):
+        self.last_update = packet.timestamp
+        self.packets_count += 1
+        self.byte_count += packet.size
+
 
 class Packet:
     def __init__(self, timestamp):
