@@ -308,7 +308,7 @@ class BaseFlowTable:
             flow_stats = \
 '''
 Total number of Rules: {num_rules}
-Total backets: {packets_count}
+Total packets: {packets_count}
 Total bytes: {byte_count}
 Flow Hit Rate: {hit_rate}
 *
@@ -450,21 +450,21 @@ class Flow:
     def output_info(self):
         '''return a string of self's info'''
         if self.ip_protocol == IP_PROTOCOL.TCP:
-            portocol = "TCP" 
+            protocol = "TCP" 
         elif self.ip_protocol == IP_PROTOCOL.UDP:
-            portocol = "UDP"
+            protocol = "UDP"
             
         out_str = '''
 Flow id: {flow_id}
 Source IP: {ip_src}
 Dest IP: {dest_ip}
-IP portocol: {portocol}
+IP protocol: {protocol}
 Src port: {sport}
 Dest port: {dport}
             '''.format(flow_id=self.id,
             ip_src=inet_to_str(self.ip_src),
             dest_ip=inet_to_str(self.ip_dst),
-            portocol=portocol,
+            protocol=protocol,
             sport=self.sport,
             dport=self.dport)
 
