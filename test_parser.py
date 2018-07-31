@@ -19,7 +19,7 @@ def parse(file_name):
     csv_name = file_name + "_parsed.csv"
     csv_fp = open(csv_name, "w+", newline='')
     header = ["time", "total_packets", "active_flows", "hit_rate"]
-    writer = csv.DictWriter(csv_fp, delimiter=",", filednames=header)
+    writer = csv.DictWriter(csv_fp, delimiter=",", fieldnames=header)
     writer.writeheader()
 
     # Set parameters:
@@ -32,7 +32,7 @@ def parse(file_name):
     all_active_flows = []
     all_hit_rate = []
 
-    while line = f.readline():
+    for line in in_fp:
         content = line.split(":")
 
         if len(content) == 2:
@@ -49,19 +49,18 @@ def parse(file_name):
             elif time == 0 and order == 3:
                 # TODO: QUESTION
                 interval = int(value) if int(value) < 100 else 100
-                
-            order += 1
 
-            if line.strip() == "*":
-                time += interval
-                order = 0
-                writer.writerow(tracking_values)
-                tracking_values = {"time":time}
-    
-    csvfile.write(other_stats)
-    csvfile.close()
+        order += 1
 
-    
+        if line.strip() == "*":
+            time += interval
+            order = 0
+            writer.writerow(tracking_values)
+            tracking_values = {"time":time}
+
+    csv_fp.close()
+
+
 
 
 
