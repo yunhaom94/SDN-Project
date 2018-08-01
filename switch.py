@@ -333,7 +333,6 @@ class TwoLevelFlowTable(BaseFlowTable):
         super().__init__(timeout)
         self.secondary_table = collections.OrderedDict()
         self.secondary_table_size = secondary_table_size
-        self.secondary_table_occupancy = 0
         # this should be able to modify easily
                         
         if eviction_policy == 1:
@@ -374,29 +373,27 @@ class TwoLevelFlowTable(BaseFlowTable):
 
     def if_secondary_exists(self, id):
         if id in self.secondary_table.keys():
+            print("true")
             return True
         else:
             return False
 
 
     def push_secondary(self, id):
-        if self.secondary_table_occupancy > self.secondary_table_size:
+        if len(self.secondary_table) > self.secondary_table_size:
             self.eviction_policy()
 
         self.secondary_table[id] = self.table[id]
-        self.secondary_table_occupancy += 1
 
 
         
     def random_eviction(self):
         evicted = random.choice(list(self.secondary_table))
         del self.secondary_table[evicted]
-        self.secondary_table_occupancy -= 1
 
 
     def FIFO(self):
         self.secondary_table.popitem(last=False)
-        self.secondary_table_occupancy -= 1
 
 
     # TODO: add more eviction methods

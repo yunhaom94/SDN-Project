@@ -60,7 +60,7 @@ class Config():
 
                 if self.config.has_option(name, "active"):
                     del other_options["active"]
-                    if not self.config[name].getboolean("to_file"):
+                    if not self.config[name].getboolean("active"):
                         continue
                  
                 if not self.config.has_option(name, "timeout"):
