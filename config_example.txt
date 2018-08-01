@@ -15,9 +15,9 @@ active=false # optional, default true
 
 # optional, default or incorrect value set to BaseFlowTable
 # Available options:
-# - two_level_random
-# - two_level_fifo
-rule=two_level_random 
+# - recycle_random
+# - recycle_fifo
+rule=recycle_random 
 
 # switch 2 profile
 [SW2]

@@ -64,14 +64,18 @@ class Switch:
         self.output_to_file = to_file
 
         self.flow_table = BaseFlowTable(timeout) # default flow table
+        self.rule = "simple"
         if "rule" in kwargs.keys():
             rule = kwargs["rule"]
-            if rule == "two_level_random":
-                self.flow_table = TwoLevelFlowTable(timeout, 1)
+            if rule == "recycle_random":
+                self.flow_table = RecycleBinFlowTable(timeout, 1)
 
-            elif rule == "two_level_fifo":
-                self.flow_table = TwoLevelFlowTable(timeout, 2)
-                
+            elif rule == "recycle_fifo":
+                self.flow_table = RecycleBinFlowTable(timeout, 2)
+
+            self.rule = rule
+
+        print("Using " + self.rule + " rule")
 
     def process_packet(self, timestamp, raw_packet):
         '''
@@ -328,52 +332,69 @@ Flow Hit Rate: {hit_rate}
         else:
             print(out_str)
 
-class TwoLevelFlowTable(BaseFlowTable):
+class RecycleBinFlowTable(BaseFlowTable):
+    '''
+    Recycle bin style secondary cache, when rule expires push flow to a cache.
+    Next time check the recycle bin first, if exists, restore from it, avoid a miss
+    '''
+
     def __init__(self, timeout, eviction_policy, secondary_table_size=10):
         super().__init__(timeout)
-        self.secondary_table = collections.OrderedDict()
+        # secondary table is a list only keep track of id, 
+        # because we already have everything in main table
+        # we pretend we have rule info in secondary table
+        self.secondary_table = [] 
         self.secondary_table_size = secondary_table_size
         # this should be able to modify easily
                         
         if eviction_policy == 1:
-            print("Using two_level_random rule")
             self.eviction_policy = self.random_eviction
         if eviction_policy == 2:
-            print("Using two_level_fifo rule")
             self.eviction_policy = self.FIFO
         else:
-            print("Using two_level_random rule")
             self.eviction_policy = self.random_eviction
 
     def deactivate_flow(self, id):
         super().deactivate_flow(id)
         self.push_secondary(id) # push to secondary table
-
-
-    def non_existing_flow(self, packet):
-        '''
-        Handles cases where a flow DNE.
-        Create a new flow and added to flow table then
-        call the existing flow handler
-        '''
-
+    
+    def existing_flow(self, packet):
         id = packet.get_id()
-        if self.if_flow_exists(id):
-            raise Exception("Flow exists")
+        if not self.if_flow_exists(id):
+            raise Exception("Flow does not exist")
 
-        if self.if_secondary_exists(id):
-            flow = self.secondary_table[id]
-            self.table[id] = flow
-            flow.active = True
+        flow = self.table[id]
+        latest_rule = None
+
+        if flow.active:
+            latest_rule = flow.rules[-1]
+        elif self.if_secondary_exists(id):
+            self.table[id].active = True
             self.existing_flow(packet)
+            self.secondary_table.remove(id)
+            
+            self.current_active_flow += 1
+            latest_rule = flow.rules[-1]
 
         else:
-            super().non_existing_flow(packet)
+            latest_rule = flow.create_rule(packet.timestamp)
+            self.missed += 1
+            self.total_rules += 1
+            self.current_active_flow += 1
+            flow.active = True
+            Output.DEBUG("Added new rule")
+
+        flow.last_update = packet.timestamp
+        latest_rule.new_packet(packet)
         
+        self.table[id] = flow
+
+        if self.current_active_flow > self.max_flow_count:
+            self.max_flow_count = self.current_active_flow
+
 
     def if_secondary_exists(self, id):
-        if id in self.secondary_table.keys():
-            print("true")
+        if id in self.secondary_table:
             return True
         else:
             return False
@@ -381,19 +402,19 @@ class TwoLevelFlowTable(BaseFlowTable):
 
     def push_secondary(self, id):
         if len(self.secondary_table) > self.secondary_table_size:
+            Output.DEBUG("Evicting: "+ id)
             self.eviction_policy()
 
-        self.secondary_table[id] = self.table[id]
-
+        self.secondary_table.append(id)
 
         
     def random_eviction(self):
-        evicted = random.choice(list(self.secondary_table))
-        del self.secondary_table[evicted]
+        evicted = random.choice(self.secondary_table)
+        self.secondary_table.remove(evicted)
 
 
     def FIFO(self):
-        self.secondary_table.popitem(last=False)
+        self.secondary_table.pop(0)
 
 
     # TODO: add more eviction methods
