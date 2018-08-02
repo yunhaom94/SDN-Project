@@ -17,6 +17,7 @@ active=false # optional, default true
 # Available options:
 # - recycle_random
 # - recycle_fifo
+# - parallel_timeout
 rule=recycle_random 
 
 # switch 2 profile
