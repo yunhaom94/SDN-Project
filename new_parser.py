@@ -67,16 +67,16 @@ def parse(file_name):
 
         if len(content) == 2:
             value = content[1].strip()
-            if order == 2:
+            if order == 1:
                 tracking_values["total_packets"] = value
                 all_packets.append(float(value))
-            if order == 4:
+            if order == 3:
                 tracking_values["active_flows"] = value
                 all_active_flows.append(float(value))
-            elif order == 7:
+            elif order == 6:
                 tracking_values["hit_rate"] = value
                 all_hit_rate.append(float(value))
-            elif time == 0 and order == 3:
+            elif time == 0 and order == 2:
                 interval = int(value) if int(value) < 100 else 100
 
         order += 1
