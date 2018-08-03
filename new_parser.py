@@ -29,7 +29,7 @@ def plot(x, y, name, linestyle='.'):
     plt.title(name)
 
 
-def parse(file_name):
+def parse(file_name, file_cate, file_to):
     try:
         in_fp = open(file_name, "r", encoding="utf-8")
     except:
@@ -37,7 +37,7 @@ def parse(file_name):
         return
 
     # Create a directory to contain plots and information
-    dir_name = file_name + '_dir'
+    dir_name = file_cate + str(file_to) + '_dir'
     try:
         os.mkdir(dir_name)
     except:
@@ -53,7 +53,7 @@ def parse(file_name):
     # Set parameters:
     time = 0
     interval = 0
-    order = 0
+    order = 0 # line number
     tracking_values = {}
     tracking_values["time"] = time
 
@@ -62,6 +62,7 @@ def parse(file_name):
     all_active_flows = []
     all_hit_rate = []
 
+    # Parse information
     for line in in_fp:
         content = line.split(":")
 
@@ -88,24 +89,67 @@ def parse(file_name):
             writer.writerow(tracking_values)
             tracking_values["time"] = time
 
+    # Plot
     plot(all_time, all_active_flows, "Hit Rate")
     plt.savefig(dir_name + '/' + 'flow')
     plot(all_time, all_hit_rate, "Hit Rate", linestyle='-')
     plt.savefig(dir_name + '/' + 'hit_rate')
 
     csv_fp.close()
+    return [all_time, all_active_flows, all_hit_rate]
+
+def parse_all(all_info, file_cat, times):
+    # MIGHT CHANGE:
+    # Each category contains all infomation
+    no_rule = []
+    parallel = []
+    random = []
+    fifo = []
+
+    for i in range(len(file_cat)):
+        my_category = {'no_rule': no_rule,
+                       'parallel': parallel,
+                       'random': random,
+                       'fifo': fifo
+                       }.get(file_cat[i], 'no_rule')
+        my_category.append(i)
+
+    print(no_rule)
+
 
 
 
 
 
 if __name__ == '__main__':
-    arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument('input', help="raw outputs from simulator")
+    # Parsing user input
+    num = int(input("How many files: "))
+    file_cat = []
+    pathes = []
+    times = []
 
-    args = arg_parser.parse_args()
-    input_file = args.input
+    for i in range(num):
+        to = input("Enter your file's timeout: ")
+        times.append(to)
+        print("======================")
 
-    print("Parsing " + input_file)
-    parse(input_file)
-    print("Done")
+        # MIGHT CHANGE:
+        print("Category: no_rule, parallel, random, fifo")
+        cate = input("Enter your file's category: ")
+        file_cat.append(cate)
+        print("======================")
+
+        path = input("Enter your file's path: ")
+        pathes.append(path)
+        print("======================")
+
+    all_info = []
+    for i in range(num):
+        print("Parsing " + file_cat[i] + " with timeout " + times[i])
+        all_info.append(parse(pathes[i], file_cat[i], int(times[i]) ))
+        print("Finish parsing this file.")
+        print("======================")
+
+    print("Parsing all information: ")
+    parse_all(all_info, file_cat, times)
+    print("Done. GL")
