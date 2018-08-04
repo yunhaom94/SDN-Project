@@ -126,12 +126,44 @@ def parse_all(all_info, file_cat, times):
     # y-axis: avg, median, 95, 99 of hit-rate, flows
     # Handle no rule:
     for cur_cat in categories.keys():
+        timeout = []
+        f_mean = []
+        f_median = []
+        f_95 = []
+        f_99 = []
+        hr_mean = []
+        hr_median = []
+        hr_95 = []
+        hr_99 = []
 
-        stats = [all_info[i] for i in categories[cur_cat]]
-        timeout = [times[i] for i in categories[cur_cat]]
-        print(cur_cat)
-        print(timeout)
-        print("===")
+
+
+        for i in categories[cur_cat]:
+            timeout.append(times[i])
+            f_mean.append(np.mean(all_info[i][1]))
+            f_median.append(np.median(all_info[i][1]))
+            f_95.append(np.percentile(all_info[i][1], 95))
+            f_99.append(np.percentile(all_info[i][1], 99))
+
+            hr_mean.append(np.mean(all_info[i][2]))
+            hr_median.append(np.median(all_info[i][2]))
+            hr_95.append(np.percentile(all_info[i][2], 95))
+            hr_99.append(np.percentile(all_info[i][2], 99))
+
+            # Plot the figure
+            # TODO: REMEBER ADD TABLES
+            # TODO: REMEBER ADD HR
+            fig, ax = plt.subplots()
+            ax.plot(timeout, f_mean, label="Mean")
+            ax.plot(timeout, f_median, label="Median")
+            ax.plot(timeout, f_95, label="95")
+            ax.plot(timeout, f_99, label="99")
+            
+            ax.legend(loc='upper right', shadow=True)
+            plt.ylabel("Flow occupancy")
+            plt.title(cur_cat)
+            plt.savefig(cur_cat)
+
 
 
     # For all, need:
