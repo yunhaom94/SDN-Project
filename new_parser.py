@@ -100,22 +100,45 @@ def parse(file_name, file_cate, file_to):
     return [all_time, all_active_flows, all_hit_rate]
 
 def parse_all(all_info, file_cat, times):
+    """
+    all_info: list of [all_time, all_active_flows, all_hit_rate]
+    file_cat: list of switches' categories
+    times: list of switches' timeouts
+    """
     # MIGHT CHANGE:
     # Each category contains all infomation
     no_rule = []
     parallel = []
     random = []
     fifo = []
+    categories = {'no_rule': no_rule,
+                    'parallel_timeout': parallel,
+                    'recycle_random': random,
+                    'recycle_fifo': fifo
+                    }
+
 
     for i in range(len(file_cat)):
-        my_category = {'no_rule': no_rule,
-                       'parallel_timeout': parallel,
-                       'recycle_random': random,
-                       'recycle_fifo': fifo
-                       }.get(file_cat[i], 'no_rule')
-        my_category.append(i)
+        categories.get(file_cat[i], 'no_rule').append(i)
 
-    print(no_rule)
+    # For each category, need:
+    # x-axis: timeout
+    # y-axis: avg, median, 95, 99 of hit-rate, flows
+    # Handle no rule:
+    for cur_cat in categories.keys():
+
+        stats = [all_info[i] for i in categories[cur_cat]]
+        timeout = [times[i] for i in categories[cur_cat]]
+        print(cur_cat)
+        print(timeout)
+        print("===")
+
+
+    # For all, need:
+    # x-axis: timeout
+    # y-axis: hit-rate
+    # plot of different methods' avg performance
+
 
 
 
