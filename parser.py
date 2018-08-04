@@ -10,6 +10,7 @@ import os
 from helpers import Output
 import argparse
 import configparser
+import time
 
 
 
@@ -89,13 +90,18 @@ class Config():
 def process_pcap_file(pcap_file_name, switches):
     pcap_file_handler = open(pcap_file_name, "rb")
     pcap_file = dpkt.pcap.Reader(pcap_file_handler)
-
+    
+    f_size = os.stat(pcap_file_name).st_size
     count = 1
 
     for timestamp, buf in pcap_file:
         for sw in switches:
-            sw.process_packet(timestamp, buf)
-        
+            #sw.process_packet(timestamp, buf)
+            pos = pcap_file_handler.tell()
+
+        print("Progress: {0:.0%}".format(pos/f_size), end="\r", flush=True)
+
+
         #count += 1
         
 
@@ -110,14 +116,25 @@ def main(config_file):
         ref_switch = Switch("reference", 1000000, True)
         switches.append(ref_switch)
 
-    # This part can be paralleled by putting each switch into different threads
+    total_file = len([file for file in os.listdir(path) if os.path.splitext(file)[1].lower() == ".pcap"])
+    parsed_file_count = 1
+
+    #TODO: This part can be paralleled by putting each switch into different threads
     for file in os.listdir(path):
         ext = os.path.splitext(file)[1]
 
         if ext.lower() == ".pcap":
             full_path = path + file
-            print("Processing " + full_path)
+            print("#################\nParsing {path}: file {i} of total {total}"
+            .format(path=full_path, i=parsed_file_count, total=total_file))
+            start = time.time()
+
             process_pcap_file(full_path, switches)
+
+            end = time.time()
+
+            print(full_path + " Completed in " + str(end - start) + " seconds" )
+            parsed_file_count += 1
         
         #break
 
@@ -125,7 +142,7 @@ def main(config_file):
         print(sw.output_all_flow())
 
 
-    print("Done")
+    print("=====ALL TRACE FILES PARSED=====")
     
     return 
 
