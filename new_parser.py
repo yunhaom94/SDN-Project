@@ -13,19 +13,24 @@ import parser as switch_parser
 def plot(x, y, name, linestyle='.'):
     # Plot the figure
     fig, ax = plt.subplots()
-    ax.plot(x, y, linestyle, label=name)
+    ax.plot(x, y, linestyle)
     mean = np.mean(y)
     median = np.median(y)
     flow_95 = np.percentile(y, 95)
     flow_99 = np.percentile(y, 99)
 
-    ax.axhline(mean, color='k', linestyle='--', label='Mean: '+str(mean))
-    ax.axhline(median, color='k', linestyle='--', label='Median: '+str(median))
-    ax.axhline(flow_95, color='k', linestyle='--', label='95%: '+str(flow_95))
-    ax.axhline(flow_99, color='k', linestyle='--', label='99%: '+str(flow_99))
+    ax.axhline(mean, color='r', linestyle='--', label='Mean: %.3f' % mean)
+    ax.axhline(median, color='m', linestyle='--', label='Median: %.3f' % median)
+    ax.axhline(flow_95, color='g', linestyle='--', label='95: %.3f' % flow_95)
+    ax.axhline(flow_99, color='k', linestyle='--', label='99: %.3f' % flow_99)
 
     # Coniguration
-    ax.legend(loc='upper right', shadow=True)
+    box = ax.get_position()
+    # ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+    if name == 'Flow':
+        ax.legend(loc='upper right', fontsize='small', framealpha=0)
+    else:
+        ax.legend(loc='center right', fontsize='small', framealpha=0)
     plt.ylabel(name)
     plt.title(name)
 
@@ -89,9 +94,15 @@ def parse(file_name, file_cate, file_to):
             order = 0
             writer.writerow(tracking_values)
             tracking_values["time"] = time
+    
+    # Delete first item:
+    all_time = all_time[1:]
+    all_packets = all_packets[1:]
+    all_active_flows = all_active_flows[1:]
+    all_hit_rate = all_hit_rate[1:]
 
     # Plot
-    plot(all_time, all_active_flows, "Hit Rate")
+    plot(all_time, all_active_flows, "Flow")
     plt.savefig(dir_name + '/' + 'flow')
     plot(all_time, all_hit_rate, "Hit Rate", linestyle='-')
     plt.savefig(dir_name + '/' + 'hit_rate')
@@ -107,16 +118,18 @@ def parse_all(all_info, file_cat, times):
     """
     # MIGHT CHANGE:
     # Each category contains all infomation
-    no_rule = []
-    parallel = []
-    random = []
-    fifo = []
-    categories = {'no_rule': no_rule,
-                    'parallel_timeout': parallel,
-                    'recycle_random': random,
-                    'recycle_fifo': fifo
+    categories = {'no_rule': [],
+                    'parallel_timeout': [],
+                    'recycle_random': [],
+                    'recycle_fifo': []
                     }
 
+    # Create a directory to contain plots and information
+    dir_name = 'all_result_dir'
+    try:
+        os.mkdir(dir_name)
+    except:
+        print("Cannot mkdir")
 
     for i in range(len(file_cat)):
         categories.get(file_cat[i], 'no_rule').append(i)
@@ -124,45 +137,48 @@ def parse_all(all_info, file_cat, times):
     # For each category, need:
     # x-axis: timeout
     # y-axis: avg, median, 95, 99 of hit-rate, flows
-    # Handle no rule:
     for cur_cat in categories.keys():
         timeout = []
-        f_mean = []
-        f_median = []
-        f_95 = []
-        f_99 = []
-        hr_mean = []
-        hr_median = []
-        hr_95 = []
-        hr_99 = []
-
-
-
+        info = {'mean': [],
+                'median': [],
+                '95': [],
+                '99': []}
+        
+        
         for i in categories[cur_cat]:
             timeout.append(times[i])
-            f_mean.append(np.mean(all_info[i][1]))
-            f_median.append(np.median(all_info[i][1]))
-            f_95.append(np.percentile(all_info[i][1], 95))
-            f_99.append(np.percentile(all_info[i][1], 99))
 
-            hr_mean.append(np.mean(all_info[i][2]))
-            hr_median.append(np.median(all_info[i][2]))
-            hr_95.append(np.percentile(all_info[i][2], 95))
-            hr_99.append(np.percentile(all_info[i][2], 99))
-
-            # Plot the figure
-            # TODO: REMEBER ADD TABLES
-            # TODO: REMEBER ADD HR
-            fig, ax = plt.subplots()
-            ax.plot(timeout, f_mean, label="Mean")
-            ax.plot(timeout, f_median, label="Median")
-            ax.plot(timeout, f_95, label="95")
-            ax.plot(timeout, f_99, label="99")
+            # element in info[''] is [flow, hit_rate]
+            info['mean'].append( [np.mean(all_info[i][1]), np.mean(all_info[i][2])] )
+            info['median'].append( [np.median(all_info[i][1]), np.median(all_info[i][2])] )
+            info['95'].append( [np.percentile(all_info[i][1], 95), np.percentile(all_info[i][2], 95)] )
+            info['99'].append( [np.percentile(all_info[i][1], 99), np.percentile(all_info[i][2], 99)] )
             
-            ax.legend(loc='upper right', shadow=True)
+            # Plot the flow
+            fig, ax = plt.subplots()
+            for stats in info.keys():
+                flow_info = [i[0] for i in info[stats]]
+                ax.plot(timeout, flow_info, label=stats, marker='o')
+
+            ax.legend(loc='upper left', shadow=True)
+            ax.grid(True)
             plt.ylabel("Flow occupancy")
             plt.title(cur_cat)
-            plt.savefig(cur_cat)
+            plt.savefig(dir_name + '/' + cur_cat+ '_flow')
+
+            # Plot the hr
+            fig, ax = plt.subplots()
+            for stats in info.keys():
+                hr_info = [i[1] for i in info[stats]]
+                ax.plot(timeout, hr_info, label=stats, marker='o')
+
+            ax.legend(loc='upper left', shadow=True)
+            ax.grid(True)
+            plt.ylabel("Hit rate")
+            plt.title(cur_cat)
+            plt.savefig(dir_name + '/' + cur_cat+ '_hr')
+
+        categories[cur_cat] = info
 
 
 
