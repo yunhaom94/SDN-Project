@@ -8,6 +8,7 @@ import csv
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import parser as switch_parser
 
 def plot(x, y, name, linestyle='.'):
     # Plot the figure
@@ -108,9 +109,9 @@ def parse_all(all_info, file_cat, times):
 
     for i in range(len(file_cat)):
         my_category = {'no_rule': no_rule,
-                       'parallel': parallel,
-                       'random': random,
-                       'fifo': fifo
+                       'parallel_timeout': parallel,
+                       'recycle_random': random,
+                       'recycle_fifo': fifo
                        }.get(file_cat[i], 'no_rule')
         my_category.append(i)
 
@@ -122,34 +123,63 @@ def parse_all(all_info, file_cat, times):
 
 
 if __name__ == '__main__':
-    # Parsing user input
-    num = int(input("How many files: "))
-    file_cat = []
+    # Get the user input
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument('config_file', help="config file")
+    args = arg_parser.parse_args()
+    config_file = args.config_file
+
+    # Parse the config file
+    config_instance = switch_parser.Config(config_file)
+    config_instance.parse_config_file()
+    config = config_instance.config
+    
     pathes = []
+    file_cat = []
     times = []
+    num_switches = 0
 
-    for i in range(num):
-        to = input("Enter your file's timeout: ")
-        times.append(to)
-        print("======================")
+    for name in config.sections():
+        if name != "COMMON":
+            sid = name
+            # Might be useful in the future
+            other_options = dict(config.items(sid, vars))
 
-        # MIGHT CHANGE:
-        print("Category: no_rule, parallel, random, fifo")
-        cate = input("Enter your file's category: ")
-        file_cat.append(cate)
-        print("======================")
+            if config.has_option(name, "active"):
+                if not config[name].getboolean("active"):
+                    continue
 
-        path = input("Enter your file's path: ")
-        pathes.append(path)
-        print("======================")
+            num_switches += 1
 
+            timeout = int(config[name]["timeout"])
+
+            to_file = True
+            if config.has_option(name, "to_file"):
+                to_file = config[name].getboolean("to_file")
+                if not to_file:
+                    continue
+            
+            if config.has_option(name, "rule"):
+                file_cat.append(config[name]["rule"])
+            else:
+                file_cat.append("no_rule")
+
+            # Current switch has output file with path: "log_"+sid, timeout: timeout, rule: other_opetions
+            pathes.append("log_" + sid)
+            times.append(timeout)
+            
+            if num_switches > config_instance.num_switches:
+                break
+    
+    # Start analyze data outputs:
+    print("======================")
     all_info = []
-    for i in range(num):
-        print("Parsing " + file_cat[i] + " with timeout " + times[i])
+    for i in range(len(pathes)):
+        print("Parsing " + pathes[i] )
         all_info.append(parse(pathes[i], file_cat[i], int(times[i]) ))
         print("Finish parsing this file.")
         print("======================")
-
+    
     print("Parsing all information: ")
     parse_all(all_info, file_cat, times)
     print("Done. GL")
