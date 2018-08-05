@@ -51,7 +51,7 @@ class IP_PROTOCOL():
 class Switch:
     def __init__(self, id, timeout, to_file, **kwargs):
         self.id = id
-        print("Running Switch: " + self.id)
+        
         self.current_time = 0
         # should be same as timeout if it's less than 100
         self.dump_interval = timeout if timeout < 100 else 100 
@@ -64,7 +64,7 @@ class Switch:
         self.output_to_file = to_file
 
         self.flow_table = BaseFlowTable(timeout) # default flow table
-        self.rule = "simple"
+        self.rule = "simple_timeout"
         if "rule" in kwargs.keys():
             rule = kwargs["rule"]
             if rule == "recycle_random":
@@ -79,7 +79,14 @@ class Switch:
 
             self.rule = rule
 
-        print("Using " + self.rule + " rule")
+        switch_info_str = \
+'''
+Running Switch: {id} 
+Default timeout: {to}
+Rule: {rule}
+'''.format(id=self.id, to=timeout, rule=self.rule)
+
+        print(switch_info_str)
 
     def process_packet(self, timestamp, raw_packet):
         '''
