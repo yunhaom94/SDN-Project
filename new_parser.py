@@ -5,10 +5,12 @@ features:
 '''
 import argparse
 import csv
-import numpy as np
-import matplotlib.pyplot as plt
 import os
 import parser as switch_parser
+
+import matplotlib.pyplot as plt
+import numpy as np
+
 
 def plot(x, y, name, linestyle='.'):
     # Plot the figure
@@ -25,13 +27,14 @@ def plot(x, y, name, linestyle='.'):
     ax.axhline(flow_99, color='k', linestyle='--', label='99: %.3f' % flow_99)
 
     # Coniguration
-    box = ax.get_position()
+    # box = ax.get_position()
     # ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
     if name == 'Flow':
         ax.legend(loc='upper right', fontsize='small', framealpha=0)
     else:
         ax.legend(loc='center right', fontsize='small', framealpha=0)
     plt.ylabel(name)
+    plt.xlabel('time')
     plt.title(name)
 
 
@@ -106,6 +109,7 @@ def parse(file_name, file_cate, file_to):
     plt.savefig(dir_name + '/' + 'flow')
     plot(all_time, all_hit_rate, "Hit Rate", linestyle='-')
     plt.savefig(dir_name + '/' + 'hit_rate')
+    plt.close('all')
 
     csv_fp.close()
     return [all_time, all_active_flows, all_hit_rate]
@@ -163,8 +167,10 @@ def parse_all(all_info, file_cat, times):
             ax.legend(loc='upper left', shadow=True)
             ax.grid(True)
             plt.ylabel("Flow occupancy")
+            plt.xlabel("Time out")
             plt.title(cur_cat)
             plt.savefig(dir_name + '/' + cur_cat+ '_flow')
+            plt.close('all')
 
             # Plot the hr
             fig, ax = plt.subplots()
@@ -176,7 +182,9 @@ def parse_all(all_info, file_cat, times):
             ax.grid(True)
             plt.ylabel("Hit rate")
             plt.title(cur_cat)
+            plt.xlabel("Time out")
             plt.savefig(dir_name + '/' + cur_cat+ '_hr')
+            plt.close('all')
 
         categories[cur_cat] = info
 
