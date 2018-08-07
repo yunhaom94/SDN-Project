@@ -189,10 +189,23 @@ def parse_all(all_info, file_cat, times):
         categories[cur_cat] = info
 
     # For all, need:
-    # x-axis: timeout
-    # y-axis: hit-rate
+    # x-axis: hit-rate
+    # y-axis: flow occupancy
     # plot of different methods' avg performance
+    for stats_cat in {'mean', 'median', '95', '99'}:
+        fig, ax = plt.subplots()
+        for cur_cat in categories.keys():
+            x = [i[1] for i in categories[cur_cat][stats_cat]]
+            y = [i[0] for i in categories[cur_cat][stats_cat]]
+            ax.plot(x, y, label=cur_cat, marker='o')
 
+        ax.legend(loc='upper left', shadow=True)
+        ax.grid(True)
+        plt.ylabel("Flow occupancy")
+        plt.xlabel("Hit rate")
+        plt.title("Summary")
+        plt.savefig(dir_name + '/' + stats_cat +'_Summary')
+        plt.close('all')
 
 
 
