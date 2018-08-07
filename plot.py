@@ -188,8 +188,6 @@ def parse_all(all_info, file_cat, times):
 
         categories[cur_cat] = info
 
-
-
     # For all, need:
     # x-axis: timeout
     # y-axis: hit-rate
