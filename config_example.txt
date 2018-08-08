@@ -20,6 +20,11 @@ active=false # optional, default true
 # - parallel_timeout
 rule=recycle_random 
 
+# only works when rule is parallel_timeout
+# this will set the secondary table timeout to 
+# timeout * multiplier, default is 10
+cache_timeout_multiplier=10
+
 # switch 2 profile
 [SW2]
 timeout=100

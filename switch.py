@@ -65,6 +65,7 @@ class Switch:
 
         self.flow_table = BaseFlowTable(timeout) # default flow table
         self.rule = "simple_timeout"
+        switch_info_str_extend = None
         if "rule" in kwargs.keys():
             rule = kwargs["rule"]
             if rule == "recycle_random":
@@ -74,7 +75,13 @@ class Switch:
                 self.flow_table = RecycleBinFlowTable(timeout, 2)
 
             elif rule == "parallel_timeout":
-                self.flow_table = ParallelSecondaryTable(timeout, 2)
+                ctm = 10
+                if "cache_timeout_multiplier" in kwargs.keys():
+                    ctm = kwargs["cache_timeout_multiplier"]
+                    
+                self.flow_table = ParallelSecondaryTable(timeout, 2, int(ctm))
+                switch_info_str_extend = "Cache timeout multiplier: " + str(ctm)
+                
 
 
             self.rule = rule
@@ -85,6 +92,9 @@ Running Switch: {id}
 Default timeout: {to}
 Rule: {rule}
 '''.format(id=self.id, to=timeout, rule=self.rule)
+
+        if switch_info_str_extend:
+            switch_info_str += switch_info_str_extend
 
         print(switch_info_str)
 
@@ -361,23 +371,20 @@ class ParallelSecondaryTable(BaseFlowTable):
     2.make 2ndary threshold variable
     '''
 
-    def __init__(self, timeout, eviction_policy):
+    def __init__(self, timeout, eviction_policy, cache_multiplier=10):
         super().__init__(timeout)
 
+        self.cache_multiplier = cache_multiplier
         self.secondary_table = collections.OrderedDict() # {flow_id:time_should_expire}
-
-        if eviction_policy == 1:
-            self.eviction_policy = self.LFU
-        if eviction_policy == 2:
-            self.eviction_policy = self.LRU
-        else:
-            self.eviction_policy = self.LFU
-
+        self.cache_misses = 1
+        self.cache_hits = 1
 
     def if_secondary_exists(self, id):
         if id in self.secondary_table.keys():
+            self.cache_hits += 1
             return True
         else:
+            self.cache_misses += 1
             return False
 
     def existing_flow(self, packet):
@@ -394,16 +401,11 @@ class ParallelSecondaryTable(BaseFlowTable):
         elif self.if_secondary_exists(id) and not flow.active:
             # in secondary table
             self.table[id].active = True
-            self.secondary_table[id] = cur_time + flow.num_rules() * 0.1 # 0.1 second
+            del self.secondary_table[id] # remove entry in cache
             self.current_active_flow += 1
             latest_rule = flow.rules[-1]
 
         else:
-            # a miss happens
-            if not self.if_secondary_exists(id) and flow.num_rules() >= 1:
-                Output.DEBUG("Adding to secondary")
-                self.secondary_table[id] = cur_time + flow.num_rules() * 0.1 # 0.1 second
-
             latest_rule = flow.create_rule(cur_time)
             self.missed += 1
             self.total_rules += 1
@@ -424,7 +426,23 @@ class ParallelSecondaryTable(BaseFlowTable):
         """
         Also timeout flows in secondary table
         """
-        super().all_timeout(current_time)
+         # timeout primary table
+        expired = []
+
+        for id, flow in self.table.items():
+            if flow.active and self.check_timeout(flow, current_time):
+                expired.append(id)
+
+        for id in expired:
+            self.deactivate_flow(id)
+
+             # a miss happens for a second time, insert into cache when timed out
+             # in reality, controller will tell switch this information
+            if self.table[id].num_rules() >= 1:
+                Output.DEBUG("Adding to secondary")
+                self.secondary_table[id] = current_time + (self.timeout * self.cache_multiplier) / 1000 # in seconds
+
+        # timeout secondary table
         expired = []
         for k, v in self.secondary_table.items():
             if current_time > v:
@@ -434,22 +452,14 @@ class ParallelSecondaryTable(BaseFlowTable):
             Output.DEBUG("deleting " + k + " from secondary")
             del self.secondary_table[k]
                 
-    
-
-    def LRU(self):
-        pass
-
-
-    def LFU(self):
-        pass
-
     def out_secondary_stats(self):
         # TODO: add more stats
         out_str = \
 '''
-Secondary table size: {snd_size}
-
-'''.format(snd_size=len(self.secondary_table))
+Current Cache Size: {snd_size}
+Current Cache Hit Rate: {hit_rate}
+'''.format(snd_size=len(self.secondary_table),
+           hit_rate=(self.cache_hits/(self.cache_hits + self.cache_misses)))
 
         return out_str
     
