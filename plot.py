@@ -55,7 +55,7 @@ def parse(file_name, file_cate, file_to):
     # Create the result csv file:
     csv_name = dir_name + '/' +  "parsed.csv"
     csv_fp = open(csv_name, "w+", newline='')
-    header = ["time", "total_packets", "active_flows", "hit_rate"]
+    header = ["time", "total_packets", "active_flows", "hit_rate", "cache_size"]
     writer = csv.DictWriter(csv_fp, delimiter=",", fieldnames=header)
     writer.writeheader()
 
@@ -70,6 +70,7 @@ def parse(file_name, file_cate, file_to):
     all_packets = []
     all_active_flows = []
     all_hit_rate = []
+    all_cache_size = []
 
     # Parse information
     for line in in_fp:
@@ -88,7 +89,9 @@ def parse(file_name, file_cate, file_to):
                 all_hit_rate.append(float(value))
             elif time == 0 and order == 2:
                 interval = int(value) if int(value) < 100 else 100
-
+            elif order == 9:
+                tracking_values["cache_size"] = value
+                all_cache_size.append(float(value))
         order += 1
 
         if line.strip() == "*":
@@ -103,6 +106,9 @@ def parse(file_name, file_cate, file_to):
     all_packets = all_packets[1:]
     all_active_flows = all_active_flows[1:]
     all_hit_rate = all_hit_rate[1:]
+    if len(all_cache_size) != 0: 
+        plot(all_time, all_cache_size, "Cache")
+        plt.savefig(dir_name + '/' + 'cache')
 
     # Plot
     plot(all_time, all_active_flows, "Flow")
