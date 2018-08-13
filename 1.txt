@@ -3,25 +3,25 @@ trace_path=./
 reference_on=False
 num_switches=6
 
-[SW7]
-timeout=320
-
-[SW8]
+[SW6]
 timeout=20
 rule=parallel_timeout
 
-[SW9]
+[SW7]
 timeout=40
 rule=parrallel_timeout
 
-[SW10]
+[SW8]
 timeout=80
 rule=parallel_timeout
 
-[SW11]
+[SW9]
 timeout=160
 rule=parallel_timeout
 
-[SW12]
+[SW10]
+timeout=320
+
+[SW11]
 timeout=320
 rule=parallel_timeout
