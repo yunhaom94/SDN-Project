@@ -12,9 +12,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot(x, y, name, linestyle='.'):
+def plot(x, y, name, linestyle='-'):
     # Plot the figure
     fig, ax = plt.subplots()
+    fig.set_size_inches(15, 10)
     ax.plot(x, y, linestyle)
     mean = np.mean(y)
     median = np.median(y)
@@ -29,10 +30,10 @@ def plot(x, y, name, linestyle='.'):
     # Coniguration
     # box = ax.get_position()
     # ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-    if name == 'Flow':
-        ax.legend(loc='upper right', fontsize='small', framealpha=0)
+    if 'Rate' in name:
+        ax.legend(loc='center right', fontsize='large', framealpha=0)
     else:
-        ax.legend(loc='center right', fontsize='small', framealpha=0)
+        ax.legend(loc='upper right', fontsize='large', framealpha=0)
     plt.ylabel(name)
     plt.xlabel('time')
     plt.title(name)
@@ -55,22 +56,23 @@ def parse(file_name, file_cate, file_to):
     # Create the result csv file:
     csv_name = dir_name + '/' +  "parsed.csv"
     csv_fp = open(csv_name, "w+", newline='')
-    header = ["time", "total_packets", "active_flows", "hit_rate", "cache_size"]
+    header = ["time", "total_packets", "active_flows", "hit_rate", "cache_size", "cache_hit"]
     writer = csv.DictWriter(csv_fp, delimiter=",", fieldnames=header)
     writer.writeheader()
 
     # Set parameters:
     time = 0
     interval = 0
-    order = 0 # line number
+    order = -1 # line number
     tracking_values = {}
     tracking_values["time"] = time
 
-    all_time = []
-    all_packets = []
-    all_active_flows = []
-    all_hit_rate = []
-    all_cache_size = []
+    all_time = np.array([])
+    all_packets = np.array([])
+    all_active_flows = np.array([])
+    all_hit_rate = np.array([])
+    all_cache_size = np.array([])
+    cache_hit = np.array([])
 
     # Parse information
     for line in in_fp:
@@ -80,47 +82,66 @@ def parse(file_name, file_cate, file_to):
             value = content[1].strip()
             if order == 1:
                 tracking_values["total_packets"] = value
-                all_packets.append(float(value))
-            if order == 3:
+                all_packets = np.append(all_packets, float(value))
+            elif order == 3:
                 tracking_values["active_flows"] = value
-                all_active_flows.append(float(value))
+                all_active_flows = np.append(all_active_flows, float(value))
             elif order == 6:
                 tracking_values["hit_rate"] = value
-                all_hit_rate.append(float(value))
+                all_hit_rate = np.append(all_hit_rate, float(value))
             elif time == 0 and order == 2:
                 interval = int(value) if int(value) < 100 else 100
             elif order == 9:
                 tracking_values["cache_size"] = value
-                all_cache_size.append(float(value))
+                all_cache_size = np.append(all_cache_size, float(value))
+            elif order == 10:
+                tracking_values["cache_hit"] = value
+                cache_hit = np.append(cache_hit, float(value))
+
         order += 1
 
         if line.strip() == "*":
+            all_time = np.append(all_time, time)
             time += interval
-            all_time.append(time)
             order = 0
             writer.writerow(tracking_values)
             tracking_values["time"] = time
     
-    # Delete first item:
-    all_time = all_time[1:]
-    all_packets = all_packets[1:]
-    all_active_flows = all_active_flows[1:]
-    all_hit_rate = all_hit_rate[1:]
-    if len(all_cache_size) != 0: 
-        plot(all_time, all_cache_size, "Cache")
-        plt.savefig(dir_name + '/' + 'cache')
+    # Delete first several items:
+    opt_out = len(all_time) // 100 * 5
+    all_time = all_time[opt_out:]
+    all_packets = all_packets[opt_out:]
+    all_active_flows = all_active_flows[opt_out:]
+    all_hit_rate = all_hit_rate[opt_out:]
 
     # Plot
     plot(all_time, all_active_flows, "Flow")
     plt.savefig(dir_name + '/' + 'flow')
     plot(all_time, all_hit_rate, "Hit Rate", linestyle='-')
     plt.savefig(dir_name + '/' + 'hit_rate')
-    plt.close('all')
 
+    # Handle cache's info
+    if len(all_cache_size) != 0: 
+        all_cache_size = all_cache_size[opt_out:]
+        plot(all_time, all_cache_size, "Cache")
+        plt.savefig(dir_name + '/' + 'cache')
+
+        cache_hit = cache_hit[opt_out:]
+        plot(all_time, cache_hit, "Cache Hit Rate", linestyle='-')
+        plt.savefig(dir_name + '/' + 'cache_hit_rate')
+
+        # Plot summary of cache and flow table: MIGHT CHANGE in the future
+        all_active_flows = all_cache_size + all_active_flows
+        plot(all_time, all_active_flows, "Sum Flow Occupancy")
+        plt.savefig(dir_name + '/' + 'sum_flow')
+
+
+    # All set
+    plt.close('all')
     csv_fp.close()
     return [all_time, all_active_flows, all_hit_rate]
 
-def parse_all(all_info, file_cat, times):
+def parse_all(all_info, file_cat, times, linear=False):
     """
     all_info: list of [all_time, all_active_flows, all_hit_rate]
     file_cat: list of switches' categories
@@ -168,7 +189,10 @@ def parse_all(all_info, file_cat, times):
             fig, ax = plt.subplots()
             for stats in info.keys():
                 flow_info = [i[0] for i in info[stats]]
-                ax.plot(timeout, flow_info, label=stats, marker='o')
+                if linear:
+                    ax.plot(timeout, flow_info, label=stats, marker='o')
+                else:
+                    ax.semilogx(timeout, flow_info, label=stats, marker='o', basex=2)
 
             ax.legend(loc='upper left', shadow=True)
             ax.grid(True)
@@ -182,7 +206,10 @@ def parse_all(all_info, file_cat, times):
             fig, ax = plt.subplots()
             for stats in info.keys():
                 hr_info = [i[1] for i in info[stats]]
-                ax.plot(timeout, hr_info, label=stats, marker='o')
+                if linear:
+                    ax.plot(timeout, hr_info, label=stats, marker='o')
+                else:
+                    ax.semilogx(timeout, hr_info, label=stats, marker='o', basex=2)
 
             ax.legend(loc='upper left', shadow=True)
             ax.grid(True)
@@ -222,14 +249,19 @@ if __name__ == '__main__':
     # Get the user input
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('config_file', help="config file")
+    arg_parser.add_argument('--linear', 
+                    action="store_true", 
+                    help="Time axis linear or log")
     args = arg_parser.parse_args()
     config_file = args.config_file
+    linear = args.linear
 
     # Parse the config file
     config_instance = switch_parser.Config(config_file)
     config_instance.parse_config_file()
     config = config_instance.config
     
+    # Initialize
     pathes = []
     file_cat = []
     times = []
@@ -277,5 +309,5 @@ if __name__ == '__main__':
         print("======================")
     
     print("Parsing all information: ")
-    parse_all(all_info, file_cat, times)
+    parse_all(all_info, file_cat, times, linear=linear)
     print("Done. GL")
