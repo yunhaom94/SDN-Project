@@ -9,7 +9,7 @@ rule=parallel_timeout
 
 [SW7]
 timeout=40
-rule=parrallel_timeout
+rule=parallel_timeout
 
 [SW8]
 timeout=80

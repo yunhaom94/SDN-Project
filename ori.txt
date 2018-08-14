@@ -1,7 +1,7 @@
 [COMMON]
 trace_path=./
 reference_on=False
-num_switches=6
+num_switches=12
 
 [SW0]
 timeout=10
@@ -28,7 +28,7 @@ rule=parallel_timeout
 
 [SW7]
 timeout=40
-rule=parrallel_timeout
+rule=parallel_timeout
 
 [SW8]
 timeout=80

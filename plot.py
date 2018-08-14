@@ -163,7 +163,7 @@ def parse_all(all_info, file_cat, times, linear=False):
         print("Cannot mkdir")
 
     for i in range(len(file_cat)):
-        categories.get(file_cat[i], 'no_rule').append(i)
+        categories[file_cat[i]].append(i)
 
     # For each category, need:
     # x-axis: timeout
