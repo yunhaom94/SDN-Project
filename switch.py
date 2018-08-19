@@ -74,16 +74,16 @@ class Switch:
             elif rule == "recycle_fifo":
                 self.flow_table = RecycleBinFlowTable(timeout, 2)
 
-            elif rule == "parallel_timeout":
+            elif rule == "parallel_fixed_timeout":
                 ctm = 10
                 if "cache_timeout_multiplier" in kwargs.keys():
                     ctm = kwargs["cache_timeout_multiplier"]
-                    
-                self.flow_table = ParallelSecondaryTable(timeout, 2, float(ctm))
+                self.flow_table = ParallelSecondaryTable(timeout, 1, float(ctm))
                 switch_info_str_extend = "Cache timeout multiplier: " + str(ctm)
+            
+            elif rule == "parallel_dynamic_last_rules":                    
+                self.flow_table = ParallelSecondaryTable(timeout, 2)
                 
-
-
             self.rule = rule
 
         switch_info_str = \
@@ -184,7 +184,7 @@ Maximum Number of Installed Rules At a Time: {max_flow_count}
         max_packets=str(self.flow_table.get_max_packets_flow()),\
         hit_ratio=hit_ratio)
 
-        if self.rule  == "parallel_timeout":
+        if self.rule  == "parallel_fixed_timeout" or self.rule == "parallel_dynamic_last_rules":
             output_str += self.flow_table.out_secondary_stats()
 
         output_str += "*"
@@ -371,13 +371,16 @@ class ParallelSecondaryTable(BaseFlowTable):
     2.make 2ndary threshold variable
     '''
 
-    def __init__(self, timeout, eviction_policy, cache_multiplier=10):
+    def __init__(self, timeout, timeout_policy, cache_multiplier=10):
         super().__init__(timeout)
 
-        self.cache_multiplier = cache_multiplier
+        self.cache_multiplier = cache_multiplier # TODO: make it variable
         self.secondary_table = collections.OrderedDict() # {flow_id:time_should_expire}
         self.cache_misses = 1
         self.cache_hits = 1
+        # timeout_policy == 1: default fixed timeout with multiplier
+        # timeout_policy == 2: timeout based on differences between last two installed rules of this flow
+        self.timeout_policy = timeout_policy 
 
     def if_secondary_exists(self, id):
         if id in self.secondary_table.keys():
@@ -436,11 +439,30 @@ class ParallelSecondaryTable(BaseFlowTable):
         for id in expired:
             self.deactivate_flow(id)
 
-             # a miss happens for a second time, insert into cache when timed out
-             # in reality, controller will tell switch this information
-            if self.table[id].num_rules() >= 1:
-                Output.DEBUG("Adding to secondary")
-                self.secondary_table[id] = current_time + (self.timeout * self.cache_multiplier) / 1000 # in seconds
+            # Rule #1, fixed timeout
+            if self.timeout_policy == 1:
+
+                # a miss happens for a second time, insert into cache when timed out
+                # in reality, controller will tell switch this information
+                if self.table[id].num_rules() >= 1:
+                    Output.DEBUG("Adding to secondary")
+                    self.secondary_table[id] = current_time + (self.timeout * self.cache_multiplier) / 1000 # in seconds
+            # Rule #2, timeout based on last rules
+
+            elif self.timeout_policy == 2:
+                
+                # the threshold must be greater than 2, because of course
+                # TODO: make it variable
+                flow = self.table[id]
+                if flow.num_rules() >= 2:
+                    last_rule = flow.rules[-1]
+                    second_last = flow.rules[-2]
+                    cachetime = current_time + (last_rule.first_seen - second_last.last_update) * 1.1
+                    if (last_rule.first_seen - second_last.last_update)  > 1: 
+                        cachetime = current_time + 1  # greater than 1 second make it 1 second
+
+                    self.secondary_table[id] = cachetime
+
 
         # timeout secondary table
         expired = []
@@ -543,10 +565,6 @@ class RecycleBinFlowTable(BaseFlowTable):
 
     def FIFO(self):
         self.secondary_table.pop(0)
-
-
-    # TODO: add more eviction methods
-
 
 class Flow:
     def __init__(self, id, ip_src, ip_dst, ip_protocol, sport, dport, cur_time):
