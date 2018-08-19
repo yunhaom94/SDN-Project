@@ -79,7 +79,7 @@ class Switch:
                 if "cache_timeout_multiplier" in kwargs.keys():
                     ctm = kwargs["cache_timeout_multiplier"]
                     
-                self.flow_table = ParallelSecondaryTable(timeout, 2, int(ctm))
+                self.flow_table = ParallelSecondaryTable(timeout, 2, float(ctm))
                 switch_info_str_extend = "Cache timeout multiplier: " + str(ctm)
                 
 
