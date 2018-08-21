@@ -76,13 +76,28 @@ class Switch:
 
             elif rule == "parallel_fixed_timeout":
                 ctm = 10
+                threshold = 1
                 if "cache_timeout_multiplier" in kwargs.keys():
                     ctm = kwargs["cache_timeout_multiplier"]
-                self.flow_table = ParallelSecondaryTable(timeout, 1, float(ctm))
+
+                if "cache_active_threshold" in kwargs.keys():
+                    if int(kwargs["cache_active_threshold"]) >= 1:
+                            threshold = int(kwargs["cache_active_threshold"])
+                
                 switch_info_str_extend = "Cache timeout multiplier: " + str(ctm)
-            
-            elif rule == "parallel_dynamic_last_rules":                    
-                self.flow_table = ParallelSecondaryTable(timeout, 2)
+                switch_info_str_extend += "\nCache active threshold: " + str(threshold)
+
+                self.flow_table = ParallelSecondaryTable(timeout, 1, float(ctm), int(threshold))
+
+            elif rule == "parallel_dynamic_last_rules":     
+                threshold = 2
+                if "cache_active_threshold" in kwargs.keys():
+                    if int(kwargs["cache_active_threshold"]) >= 2:
+                        threshold = int(kwargs["cache_active_threshold"])
+                
+                switch_info_str_extend = "Cache active threshold: " + str(threshold)
+
+                self.flow_table = ParallelSecondaryTable(timeout, 2, 0, threshold)
                 
             self.rule = rule
 
@@ -366,12 +381,10 @@ class ParallelSecondaryTable(BaseFlowTable):
     After second time misses happens, the flow will be also pushed into secondary table
     with # of misses * 100ms timeout in secondary table
 
-
-    TODO: 1.make ratio variable
-    2.make 2ndary threshold variable
+    TODO: make argument kwargs
     '''
 
-    def __init__(self, timeout, timeout_policy, cache_multiplier=10):
+    def __init__(self, timeout, timeout_policy, cache_multiplier=10, threshold=2):
         super().__init__(timeout)
 
         self.cache_multiplier = cache_multiplier # TODO: make it variable
@@ -381,6 +394,7 @@ class ParallelSecondaryTable(BaseFlowTable):
         # timeout_policy == 1: default fixed timeout with multiplier
         # timeout_policy == 2: timeout based on differences between last two installed rules of this flow
         self.timeout_policy = timeout_policy 
+        self.threshold = threshold
 
     def if_secondary_exists(self, id):
         if id in self.secondary_table.keys():
@@ -444,7 +458,7 @@ class ParallelSecondaryTable(BaseFlowTable):
 
                 # a miss happens for a second time, insert into cache when timed out
                 # in reality, controller will tell switch this information
-                if self.table[id].num_rules() >= 1:
+                if self.table[id].num_rules() >= self.threshold:
                     Output.DEBUG("Adding to secondary")
                     self.secondary_table[id] = current_time + (self.timeout * self.cache_multiplier) / 1000 # in seconds
             # Rule #2, timeout based on last rules
@@ -454,7 +468,7 @@ class ParallelSecondaryTable(BaseFlowTable):
                 # the threshold must be greater than 2, because of course
                 # TODO: make it variable
                 flow = self.table[id]
-                if flow.num_rules() >= 2:
+                if flow.num_rules() >= self.threshold:
                     last_rule = flow.rules[-1]
                     second_last = flow.rules[-2]
                     cachetime = current_time + (last_rule.first_seen - second_last.last_update) * 1.1

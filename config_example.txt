@@ -7,7 +7,7 @@ num_switches=2 # optional, will only create maximum number of switch defined her
 
 
 # any section other than [COMMON] is a switch
-# name of the section is ID
+# name of the section is IDw
 [SW1]
 timeout=10 # you must have this, used for base timeout
 to_file=true # optional, output result to to_file, default true
@@ -25,6 +25,12 @@ rule=recycle_random
 # this will set the secondary table timeout to 
 # timeout * multiplier, default is 10
 cache_timeout_multiplier=10
+
+# only works when rule is parallel_fixed_timeout or parallel_dynamic_last_rules
+# threshold of how many times that miss occurs before sending to secondary table
+# when parallel_fixed_timeout default and minimum is set to 1
+# when parallel_dynamic_last_rules default and minimum is set to 2
+cache_active_threshold=2
 
 # switch 2 profile
 [SW2]
