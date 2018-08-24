@@ -19,6 +19,7 @@ active=false # optional, default true
 # - recycle_fifo
 # - parallel_fixed_timeout
 # - parallel_dynamic_last_rules
+# - smart_time
 rule=recycle_random 
 
 # only works when rule is parallel_fixed_timeout

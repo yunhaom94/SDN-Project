@@ -98,6 +98,9 @@ class Switch:
                 switch_info_str_extend = "Cache active threshold: " + str(threshold)
 
                 self.flow_table = ParallelSecondaryTable(timeout, 2, 0, threshold)
+
+            elif rule == "smart_time":
+                self.flow_table = SmartTimeTable(timeout)
                 
             self.rule = rule
 
@@ -371,6 +374,85 @@ Flow Hit Rate: {hit_rate}
         
         else:
             print(out_str)
+
+
+class SmartTimeTable(BaseFlowTable):
+    '''
+    https://rishabhpoddar.com/publications/SmartTime.pdf 
+    '''
+
+    def __init__(self, min_timeout):
+        super().__init__(min_timeout)
+        self.timeout_table = {} # because the original table doesn't have timeout info and I don't want to change to much code
+    
+
+    def existing_flow(self, packet):
+        pid = packet.get_id()
+        flow = self.table[pid]
+        MAX_TIMEOUT = self.timeout * 100 # if 100ms then 10s
+
+        if flow.get_byte_count() == 0:
+            # if a flow has never been observed before
+            self.timeout_table[pid] = [self.timeout]
+
+        else:
+            timeout = self.timeout * (2 ** flow.num_rules())
+
+            prev_timeout = self.timeout_table[pid][-1]
+            if prev_timeout >= MAX_TIMEOUT and self.hold_factor(pid, packet.timestamp) > 3:
+                timeout = self.timeout
+            
+            if prev_timeout >= MAX_TIMEOUT:
+                timeout = MAX_TIMEOUT
+
+            self.timeout_table[pid].append(timeout)
+
+        super().existing_flow(packet)
+
+    def hold_factor(self, flow_id, cur_time):
+        '''
+        Calculate hold factor: http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.10.9508
+        "Hold Factor is defined as the sum of active time and idle time, 
+        divided by the active time: it is desirable to have the hold factor as close to 1 as possible"
+        
+        '''
+
+        flow = self.table[flow_id]
+        prev = None
+        active_time = 0
+        inactive_time = 0
+        for r in flow.rules:
+            if not r.last_update:
+                continue
+
+            active_time += r.last_update - r.first_seen
+            
+            if prev and prev.last_update:
+                inactive_time += r.first_seen - prev.last_update
+
+            prev = r
+
+        inactive_time += cur_time - prev.last_update
+
+        if inactive_time == 0 or active_time == 0:
+            return 999
+        else:
+            return float((active_time + inactive_time) / active_time)
+        
+        
+
+    def check_timeout(self, flow, current_time):
+        # converts to ms
+        delta = (current_time - flow.last_update) * 1000
+
+        timeout = self.timeout_table[flow.id][-1]
+
+        if delta > timeout:
+            Output.DEBUG("Timing out " + flow.id)
+            return True
+        else:
+            return False
+
 
 class ParallelSecondaryTable(BaseFlowTable):
     '''
