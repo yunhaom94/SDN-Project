@@ -17,6 +17,8 @@ def plot(x, y, name, linestyle='-'):
     fig, ax = plt.subplots()
     fig.set_size_inches(15, 10)
     ax.plot(x, y, linestyle)
+
+    # Adding horizontal lines
     mean = np.mean(y)
     median = np.median(y)
     flow_95 = np.percentile(y, 95)
@@ -27,9 +29,7 @@ def plot(x, y, name, linestyle='-'):
     ax.axhline(flow_95, color='g', linestyle='--', label='95: %.3f' % flow_95)
     ax.axhline(flow_99, color='k', linestyle='--', label='99: %.3f' % flow_99)
 
-    # Coniguration
-    # box = ax.get_position()
-    # ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+    # Adding legends and label
     if 'Rate' in name:
         ax.legend(loc='center right', fontsize='large', framealpha=0)
     else:
@@ -40,6 +40,7 @@ def plot(x, y, name, linestyle='-'):
 
 
 def parse(file_name, file_cate, file_to):
+    # Read the file
     try:
         in_fp = open(file_name, "r", encoding="utf-8")
     except:
@@ -47,7 +48,7 @@ def parse(file_name, file_cate, file_to):
         return
 
     # Create a directory to contain plots and information
-    dir_name = file_cate + str(file_to) + '_dir'
+    dir_name = 'data/' + file_cate + str(file_to) + '_dir'
     try:
         os.mkdir(dir_name)
     except:
@@ -60,7 +61,7 @@ def parse(file_name, file_cate, file_to):
     writer = csv.DictWriter(csv_fp, delimiter=",", fieldnames=header)
     writer.writeheader()
 
-    # Set parameters:
+    # Init parameters
     time = 0
     interval = 0
     order = -1 # line number
@@ -130,7 +131,7 @@ def parse(file_name, file_cate, file_to):
         plot(all_time, cache_hit, "Cache Hit Rate", linestyle='-')
         plt.savefig(dir_name + '/' + 'cache_hit_rate')
 
-        # Plot summary of cache and flow table: MIGHT CHANGE in the future
+        # Plot summary of cache and flow table: TODO: MIGHT CHANGE in the future
         all_active_flows = all_cache_size + all_active_flows
         plot(all_time, all_active_flows, "Sum Flow Occupancy")
         plt.savefig(dir_name + '/' + 'sum_flow')
@@ -147,13 +148,18 @@ def parse_all(all_info, file_cat, times, linear=False):
     file_cat: list of switches' categories
     times: list of switches' timeouts
     """
-    # MIGHT CHANGE:
+    # TODO: MIGHT CHANGE:
     # Each category contains all infomation
     categories = {'no_rule': [],
-                    'parallel_timeout': [],
-                    'recycle_random': [],
-                    'recycle_fifo': []
+                    'cache_1p5x': [],
+                    'cache_5x': [],
+                    'cache_10x': [],
+                    'parallel_dynamic_last_rules':[],
+                    'smart_time': []
                     }
+
+    for i in range(len(file_cat)):
+        categories[file_cat[i]].append(i)
 
     # Create a directory to contain plots and information
     dir_name = 'all_result_dir'
@@ -161,9 +167,6 @@ def parse_all(all_info, file_cat, times, linear=False):
         os.mkdir(dir_name)
     except:
         print("Cannot mkdir")
-
-    for i in range(len(file_cat)):
-        categories[file_cat[i]].append(i)
 
     # For each category, need:
     # x-axis: timeout
@@ -173,7 +176,8 @@ def parse_all(all_info, file_cat, times, linear=False):
         info = {'mean': [],
                 'median': [],
                 '95': [],
-                '99': []}
+                '99': [],
+                'max': []}
         
         
         for i in categories[cur_cat]:
@@ -184,18 +188,22 @@ def parse_all(all_info, file_cat, times, linear=False):
             info['median'].append( [np.median(all_info[i][1]), np.median(all_info[i][2])] )
             info['95'].append( [np.percentile(all_info[i][1], 95), np.percentile(all_info[i][2], 95)] )
             info['99'].append( [np.percentile(all_info[i][1], 99), np.percentile(all_info[i][2], 99)] )
-            
+            info['max'].append( [np.max(all_info[i][1]), np.mean(all_info[i][2])] )
+
             # Plot the flow
             fig, ax = plt.subplots()
+            fig.set_size_inches(20, 15)
             for stats in info.keys():
                 flow_info = [i[0] for i in info[stats]]
                 if linear:
-                    ax.plot(timeout, flow_info, label=stats, marker='o')
+                    ax.plot(timeout, flow_info, label=stats, marker='.')
                 else:
-                    ax.semilogx(timeout, flow_info, label=stats, marker='o', basex=2)
+                    ax.semilogx(timeout, flow_info, label=stats, marker='.', basex=10)
 
+
+            # Adding legend and label
             ax.legend(loc='upper left', shadow=True)
-            ax.grid(True)
+            ax.grid(which='both')
             plt.ylabel("Flow occupancy")
             plt.xlabel("Time out")
             plt.title(cur_cat)
@@ -204,15 +212,16 @@ def parse_all(all_info, file_cat, times, linear=False):
 
             # Plot the hr
             fig, ax = plt.subplots()
+            fig.set_size_inches(20, 15)
             for stats in info.keys():
                 hr_info = [i[1] for i in info[stats]]
                 if linear:
-                    ax.plot(timeout, hr_info, label=stats, marker='o')
+                    ax.plot(timeout, hr_info, label=stats, marker='.')
                 else:
-                    ax.semilogx(timeout, hr_info, label=stats, marker='o', basex=2)
+                    ax.semilogx(timeout, hr_info, label=stats, marker='.', basex=10)
 
             ax.legend(loc='upper left', shadow=True)
-            ax.grid(True)
+            ax.grid(which='both')
             plt.ylabel("Hit rate")
             plt.title(cur_cat)
             plt.xlabel("Time out")
@@ -225,15 +234,16 @@ def parse_all(all_info, file_cat, times, linear=False):
     # x-axis: hit-rate
     # y-axis: flow occupancy
     # plot of different methods' avg performance
-    for stats_cat in {'mean', 'median', '95', '99'}:
+    for stats_cat in {'mean', 'median', '95', '99', 'max'}:
         fig, ax = plt.subplots()
+        fig.set_size_inches(20, 15)
         for cur_cat in categories.keys():
             x = [i[1] for i in categories[cur_cat][stats_cat]]
             y = [i[0] for i in categories[cur_cat][stats_cat]]
-            ax.plot(x, y, label=cur_cat, marker='o')
+            ax.plot(x, y, label=cur_cat, marker='.')
 
         ax.legend(loc='upper left', shadow=True)
-        ax.grid(True)
+        ax.grid(which='both')
         plt.ylabel("Flow occupancy")
         plt.xlabel("Hit rate")
         plt.title("Summary")
@@ -266,6 +276,12 @@ if __name__ == '__main__':
     file_cat = []
     times = []
     num_switches = 0
+
+    # Save to 'data' folder:
+    try:
+        os.mkdir('data')
+    except:
+        print("Cannot mkdir")
 
     for name in config.sections():
         if name != "COMMON":
