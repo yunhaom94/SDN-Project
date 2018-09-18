@@ -15,6 +15,7 @@ active=false # optional, default true
 
 # optional, default or incorrect value set to BaseFlowTable
 # Available options:
+# - no_cache - default
 # - recycle_random
 # - recycle_fifo
 # - parallel_fixed_timeout
