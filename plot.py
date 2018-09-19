@@ -154,7 +154,7 @@ def parse_all(all_info, file_cat, times, linear=False):
                     'cache_1p5x': [],
                     'cache_5x': [],
                     'cache_10x': [],
-                    'parallel_dynamic_last_rules':[],
+                    'cache_dynamic_timeout_last_rules':[],
                     'smart_time': []
                     }
 

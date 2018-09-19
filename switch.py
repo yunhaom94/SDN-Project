@@ -68,13 +68,13 @@ class Switch:
         switch_info_str_extend = None
         if "rule" in kwargs.keys():
             rule = kwargs["rule"]
-            if rule == "recycle_random":
+            if rule == "cache_no_timeout_random":
                 self.flow_table = RecycleBinFlowTable(timeout, 1)
 
-            elif rule == "recycle_fifo":
+            elif rule == "cache_no_timeout_fifo":
                 self.flow_table = RecycleBinFlowTable(timeout, 2)
 
-            elif rule == "parallel_fixed_timeout":
+            elif rule == "cache_fixed_timeout":
                 ctm = 10
                 threshold = 1
                 if "cache_timeout_multiplier" in kwargs.keys():
@@ -89,7 +89,7 @@ class Switch:
 
                 self.flow_table = ParallelSecondaryTable(timeout, 1, float(ctm), int(threshold))
 
-            elif rule == "parallel_dynamic_last_rules":     
+            elif rule == "cache_dynamic_timeout_last_rules":     
                 threshold = 2
                 if "cache_active_threshold" in kwargs.keys():
                     if int(kwargs["cache_active_threshold"]) >= 2:
@@ -202,7 +202,7 @@ Maximum Number of Installed Rules At a Time: {max_flow_count}
         max_packets=str(self.flow_table.get_max_packets_flow()),\
         hit_ratio=hit_ratio)
 
-        if self.rule  == "parallel_fixed_timeout" or self.rule == "parallel_dynamic_last_rules":
+        if self.rule  == "cache_fixed_timeout" or self.rule == "cache_dynamic_timeout_last_rules":
             output_str += self.flow_table.out_secondary_stats()
 
         output_str += "*"

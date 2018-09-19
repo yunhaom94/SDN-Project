@@ -16,22 +16,22 @@ active=false # optional, default true
 # optional, default or incorrect value set to BaseFlowTable
 # Available options:
 # - no_cache - default
-# - recycle_random
-# - recycle_fifo
-# - parallel_fixed_timeout
-# - parallel_dynamic_last_rules
+# - cache_no_timeout_random
+# - cache_no_timeout_fifo
+# - cache_fixed_timeout
+# - cache_dynamic_timeout_last_rules
 # - smart_time
-rule=recycle_random 
+rule=cache_no_timeout_random 
 
-# only works when rule is parallel_fixed_timeout
+# only works when rule is cache_fixed_timeout
 # this will set the secondary table timeout to 
 # timeout * multiplier, default is 10
 cache_timeout_multiplier=10
 
-# only works when rule is parallel_fixed_timeout or parallel_dynamic_last_rules
+# only works when rule is cache_fixed_timeout or cache_dynamic_timeout_last_rules
 # threshold of how many times that miss occurs before sending to secondary table
-# when parallel_fixed_timeout default and minimum is set to 1
-# when parallel_dynamic_last_rules default and minimum is set to 2
+# when cache_fixed_timeout default and minimum is set to 1
+# when cache_dynamic_timeout_last_rules default and minimum is set to 2
 cache_active_threshold=2
 
 # switch 2 profile
