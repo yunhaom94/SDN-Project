@@ -68,25 +68,36 @@ if __name__ == '__main__':
     
         cur_fp.close()
 
+    # Generate Multiplier
+    mult_list = []
+    gap_list = [10, 4, 2, 1, 0.3, 0.1]
+    for i in range(6):
+        start = 1
+        cur_range = []
+        for j in range(10):
+            cur_range.append(start)
+            start = start + gap_list[i]
+        mult_list.append(cur_range)
+
+
     # Generate fixed timeout test files
-    # num_file = 600 // x
-    # for i in range(num_file):
-    #     file_name = "cache_fixed_config" + str(i) + ".txt"
-    #     cur_fp = open(file_name, "w+")
+    for i in range(6):
+        for j in range(10):
+            file_name = "cache_fixed_config" + str(i*10 + j) + ".txt"
+            cur_fp = open(file_name, "w+")
 
-    #     cur_fp.write("[COMMON]\n")
-    #     cur_fp.write("trace_path=" + trace_path + "\n")
-    #     cur_fp.write("num_switches=" + str(x) + "\n")
+            cur_fp.write("[COMMON]\n")
+            cur_fp.write("trace_path=" + trace_path + "\n")
+            cur_fp.write("num_switches=" + str(x) + "\n")
 
-    #     for j in range(x):
-    #         cur_fp.write("[SW" + str(start_id) + "]\n")
-    #         start_id += 1
+            for k in range(10):
+                cur_fp.write("[SW" + str(start_id) + "]\n")
+                cur_fp.write("rule=cache_fixed_timeout\n")
+                start_id += 1
 
-    #         # Detect timeout:
-    #         total_index = i * x + j
-    #         row = total_index // 10
-    #         col = total_index % 10
-    #         cur_fp.write("timeout=" + str(timeout_list[row][col]) + "\n")
+                # Detect timeout:
+                cur_fp.write("timeout=" + str(timeout_list[i][j]) + "\n")
+                cur_fp.write("cache_timeout_multiplier=" + str(mult_list[i][k]) + "\n")
             
 
 
