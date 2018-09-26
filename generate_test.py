@@ -12,12 +12,12 @@ Timeout
     6. 3110ms to 5990ms; every 320ms
 
 Multiplier (Maximum multiplier should less than 10s)
-    1: 1 to 100 every 10
-    2: 1 to 40 every 4
-    3: 1 to 20 every 2
+    1: 1 to 91 every 10
+    2: 1 to 37 every 4
+    3: 1 to 19 every 2
     4: 1 to 10 every 1
-    5: 1 to 4 every 0.4
-    6: 1 to 2 every 0.2
+    5: 1 to 3.7 every 0.3
+    6: 1 to 2 every 0.1
 
 Cache size: TBD
 
@@ -68,6 +68,25 @@ if __name__ == '__main__':
     
         cur_fp.close()
 
+    # Generate fixed timeout test files
+    # num_file = 600 // x
+    # for i in range(num_file):
+    #     file_name = "cache_fixed_config" + str(i) + ".txt"
+    #     cur_fp = open(file_name, "w+")
+
+    #     cur_fp.write("[COMMON]\n")
+    #     cur_fp.write("trace_path=" + trace_path + "\n")
+    #     cur_fp.write("num_switches=" + str(x) + "\n")
+
+    #     for j in range(x):
+    #         cur_fp.write("[SW" + str(start_id) + "]\n")
+    #         start_id += 1
+
+    #         # Detect timeout:
+    #         total_index = i * x + j
+    #         row = total_index // 10
+    #         col = total_index % 10
+    #         cur_fp.write("timeout=" + str(timeout_list[row][col]) + "\n")
             
 
 
