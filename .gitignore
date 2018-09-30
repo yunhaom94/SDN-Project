@@ -111,9 +111,9 @@ tracefiles
 result.py
 result.txt
 out.txt
-log_*
+*/log_*
 config.txt
-no_cache_config*
-cache_fixed_config*
+*/no_cache_config*
+*/cache_fixed_config*
 *.csv
 !results/*
