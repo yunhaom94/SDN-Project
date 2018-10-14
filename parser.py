@@ -120,7 +120,7 @@ def main(config_file):
     parsed_file_count = 1
 
     #TODO: This part can be paralleled by putting each switch into different threads
-    for file in os.listdir(path):
+    for file in sorted(os.listdir(path)):
         ext = os.path.splitext(file)[1]
 
         if ext.lower() == ".pcap":
