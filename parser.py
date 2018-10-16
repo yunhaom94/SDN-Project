@@ -97,7 +97,7 @@ def process_pcap_file(pcap_file_name, switches):
     for timestamp, buf in pcap_file:
         for sw in switches:
             sw.process_packet(timestamp, buf)
-            pass
+            #pass
             
         pos = pcap_file_handler.tell()
         print("Progress: {0:.0%}".format(pos/f_size), end="\r", flush=True)

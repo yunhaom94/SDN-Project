@@ -5,6 +5,7 @@ import operator
 from helpers import Output
 import random
 import collections
+import numpy as np
 
 #### HELPER FUNCTIONS FROM 
 #### http://dpkt.readthedocs.io/en/latest/_modules/examples/print_packets.html#mac_addr
@@ -59,9 +60,12 @@ class Switch:
         # also used for check for timeout
         self.last_dump_time = 0 
         self.total_packets = 0
-        self.first_write = True # used to check for writing logs to file
         self.missed = 0 # # of packets that needs to create a new flow for it
-        self.output_to_file = to_file
+        self.to_file = to_file
+        if self.to_file:
+            filename = "log_" + str(self.id)
+            self.outfile = open(filename, "w+") # create or overwrite the file
+                
 
         self.flow_table = BaseFlowTable(timeout) # default flow table
         self.rule = "simple_timeout"
@@ -127,7 +131,7 @@ Rule: {rule}
 
         if (self.current_time - self.last_dump_time) * 1000 > self.dump_interval:
             self.flow_table.all_timeout(self.current_time)
-            self.output_statistics(self.output_to_file)
+            self.output_statistics(self.to_file)
             self.last_dump_time = self.current_time
 
         try:
@@ -199,7 +203,7 @@ Maximum Number of Installed Rules At a Time: {max_flow_count}
         active_flow=str(self.flow_table.current_active_flow),\
         total_rules=str(self.flow_table.total_rules),\
         max_flow_count=str(self.flow_table.max_flow_count),\
-        max_packets=str(self.flow_table.get_max_packets_flow()),\
+        max_packets=str("N/A"),\
         hit_ratio=hit_ratio)
 
         if self.rule  == "cache_fixed_timeout" or self.rule == "cache_dynamic_timeout_last_rules":
@@ -208,23 +212,14 @@ Maximum Number of Installed Rules At a Time: {max_flow_count}
         output_str += "*"
         
         if to_file:
-            filename = "log_" + str(self.id)
-            # create a file if first time writing to file
-            if self.first_write: 
-                outfile = open(filename, "w+") # create or overwrite the file
-                outfile.close()
-                self.first_write = False
-
-            with open(filename, "a") as out_file:
-                out_file.write(output_str)
-
-
+            self.outfile.write(output_str)
         else:
             print(output_str)
 
 
     def output_all_flow(self, to_file=True):
         self.flow_table.output_all_flow(self.id, to_file)
+        self.outfile.close()
 
 
 class BaseFlowTable:
@@ -321,11 +316,7 @@ class BaseFlowTable:
         """
         Iterates through the flow table and checks for timeout.
         """
-        expired = []
-
-        for id, flow in self.table.items():
-            if flow.active and self.check_timeout(flow, current_time):
-                expired.append(id)
+        expired = [k for k, v in self.table.items() if v.active and self.check_timeout(v, current_time)]
 
         for id in expired:
             self.deactivate_flow(id)
@@ -525,12 +516,9 @@ class ParallelSecondaryTable(BaseFlowTable):
         """
         Also timeout flows in secondary table
         """
-         # timeout primary table
-        expired = []
+        # timeout primary table
 
-        for id, flow in self.table.items():
-            if flow.active and self.check_timeout(flow, current_time):
-                expired.append(id)
+        expired = [k for k, v in self.table.items() if v.active and self.check_timeout(v, current_time)]
 
         for id in expired:
             self.deactivate_flow(id)
@@ -561,10 +549,7 @@ class ParallelSecondaryTable(BaseFlowTable):
 
 
         # timeout secondary table
-        expired = []
-        for k, v in self.secondary_table.items():
-            if current_time > v:
-                expired.append(k)
+        expired = [k for k, v in self.secondary_table.items() if current_time > v]
 
         for k in expired:
             Output.DEBUG("deleting " + k + " from secondary")

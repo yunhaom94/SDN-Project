@@ -111,7 +111,7 @@ tracefiles
 result.py
 result.txt
 out.txt
-*/log_*
+log_*
 config.txt
 
 
