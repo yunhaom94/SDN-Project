@@ -11,7 +11,7 @@ from helpers import Output
 import argparse
 import configparser
 import time
-
+import re
 
 
 
@@ -97,8 +97,9 @@ def process_pcap_file(pcap_file_name, switches):
     for timestamp, buf in pcap_file:
         for sw in switches:
             sw.process_packet(timestamp, buf)
-            pos = pcap_file_handler.tell()
-
+            pass
+            
+        pos = pcap_file_handler.tell()
         print("Progress: {0:.0%}".format(pos/f_size), end="\r", flush=True)
 
 
@@ -120,21 +121,25 @@ def main(config_file):
     parsed_file_count = 1
 
     #TODO: This part can be paralleled by putting each switch into different threads
-    for file in sorted(os.listdir(path)):
-        ext = os.path.splitext(file)[1]
 
-        if ext.lower() == ".pcap":
-            full_path = path + file
-            print("#################\nParsing {path}: file {i} of total {total}"
-            .format(path=full_path, i=parsed_file_count, total=total_file))
-            start = time.time()
 
-            process_pcap_file(full_path, switches)
+    files = [f for f in os.listdir(path) if os.path.splitext(f)[1] == ".pcap"]
 
-            end = time.time()
+    files = sorted(files, key=lambda filename: int(os.path.splitext(filename)[0].split("pt")[1]))
 
-            print(full_path + " Completed in " + str(end - start) + " seconds" )
-            parsed_file_count += 1
+    print(files)
+    for file in files:
+        full_path = path + file 
+        print("#################\nParsing {path}: file {i} of total {total}"
+        .format(path=full_path, i=parsed_file_count, total=total_file))
+        start = time.time()
+
+        process_pcap_file(full_path, switches)
+
+        end = time.time()
+
+        print(full_path + " Completed in " + str(end - start) + " seconds" )
+        parsed_file_count += 1
         
         #break
 
