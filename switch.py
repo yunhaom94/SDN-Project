@@ -5,7 +5,6 @@ import operator
 from helpers import Output
 import random
 import collections
-import numpy as np
 
 #### HELPER FUNCTIONS FROM 
 #### http://dpkt.readthedocs.io/en/latest/_modules/examples/print_packets.html#mac_addr
