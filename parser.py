@@ -143,8 +143,8 @@ def main(config_file):
         
         #break
 
-    for sw in switches:
-        print(sw.output_all_flow(False)) # we dont need that for now, TODO: make it an option
+    #for sw in switches:
+    #    print(sw.output_all_flow(False)) # we dont need that for now, TODO: make it an option
 
 
     print("=====ALL TRACE FILES PARSED=====")
