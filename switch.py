@@ -237,6 +237,13 @@ class BaseFlowTable:
         self.total_rules = 0
         self.missed = 0
 
+        # keep track of stack of flow rule ids should be update
+        # so new and updated flows id and update time are pushed to the stack
+        # when need to timeout, check the first(earliest) check if it is timed out
+        # if yes, pop it and check the new first, if not, stop, because anything after will 
+        # not be timed out out
+        self.should_active = []
+
     def if_flow_exists(self, id):
         if id in self.table.keys():
             return True
@@ -274,6 +281,8 @@ class BaseFlowTable:
         if self.current_active_flow > self.max_flow_count:
             self.max_flow_count = self.current_active_flow
 
+        self.should_active.append(flow)
+
 
     def non_existing_flow(self, packet):
         '''
@@ -305,8 +314,18 @@ class BaseFlowTable:
     def check_timeout(self, flow, current_time):
         # converts to ms
         delta = (current_time - flow.last_update) * 1000
-        if delta > self.timeout:
+
+        if self.check_delta(current_time, flow.last_update, self.timeout):
             Output.DEBUG("Timing out " + flow.id)
+            return True
+        else:
+            return False
+
+
+    def check_delta(self, current_time, last_update, timeout):
+        delta = (current_time - last_update) * 1000
+
+        if delta > timeout:
             return True
         else:
             return False
@@ -433,11 +452,10 @@ class SmartTimeTable(BaseFlowTable):
 
     def check_timeout(self, flow, current_time):
         # converts to ms
-        delta = (current_time - flow.last_update) * 1000
-
+    
         timeout = self.timeout_table[flow.id][-1]
 
-        if delta > timeout:
+        if self.check_delta(current_time, flow.last_update, timeout):
             Output.DEBUG("Timing out " + flow.id)
             return True
         else:
@@ -467,6 +485,8 @@ class ParallelSecondaryTable(BaseFlowTable):
         # timeout_policy == 2: timeout based on differences between last two installed rules of this flow
         self.timeout_policy = timeout_policy 
         self.threshold = threshold
+
+
 
     def if_secondary_exists(self, id):
         if id in self.secondary_table.keys():
@@ -510,6 +530,8 @@ class ParallelSecondaryTable(BaseFlowTable):
         if self.current_active_flow > self.max_flow_count:
             self.max_flow_count = self.current_active_flow
 
+        self.should_active.append((flow.id, flow.last_update))
+
 
     def all_timeout(self, current_time):
         """
@@ -517,9 +539,24 @@ class ParallelSecondaryTable(BaseFlowTable):
         """
         # timeout primary table
 
-        expired = [k for k, v in self.table.items() if v.active and self.check_timeout(v, current_time)]
+        #expired = [k for k, v in self.table.items() if v.active and self.check_timeout(v, current_time)]
 
-        for id in expired:
+        should_expired = []
+        while len(self.should_active) > 0:
+            earliest = self.should_active[0]
+            if self.check_delta(current_time, earliest[1], self.timeout):
+                should_expired.append(self.should_active.pop(0)[0])
+            else:
+                break
+
+       
+        should_active_ids = [i[0] for i in self.should_active]
+
+
+        for id in should_expired:
+            flow = self.table[id]
+            if not flow.active or id in should_active_ids:
+                continue
             self.deactivate_flow(id)
 
             # Rule #1, fixed timeout
