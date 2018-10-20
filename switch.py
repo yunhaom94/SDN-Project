@@ -281,7 +281,7 @@ class BaseFlowTable:
         if self.current_active_flow > self.max_flow_count:
             self.max_flow_count = self.current_active_flow
 
-        self.should_active.append(flow)
+        self.should_active.append((flow.id, flow.last_update))
 
 
     def non_existing_flow(self, packet):
@@ -334,10 +334,24 @@ class BaseFlowTable:
         """
         Iterates through the flow table and checks for timeout.
         """
-        expired = [k for k, v in self.table.items() if v.active and self.check_timeout(v, current_time)]
+        should_expired = []
+        while len(self.should_active) > 0:
+            earliest = self.should_active[0]
+            if self.check_delta(current_time, earliest[1], self.timeout):
+                should_expired.append(self.should_active.pop(0)[0])
+            else:
+                break
 
-        for id in expired:
+       
+        should_active_ids = [i[0] for i in self.should_active]
+
+
+        for id in should_expired:
+            flow = self.table[id]
+            if not flow.active or id in should_active_ids:
+                continue
             self.deactivate_flow(id)
+
 
     def get_max_packets_flow(self):
         if len(self.table.values()) > 0:
