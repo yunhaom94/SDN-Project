@@ -151,7 +151,7 @@ def parse_all(all_info, file_cat, times, linear=False):
     # TODO: MIGHT CHANGE:
     # Each category contains all infomation
     categories = {'no_rule': [],
-                    'cache_1p5x': [],
+                    'cache_fixed_timeout': [],
                     'cache_5x': [],
                     'cache_10x': [],
                     'cache_dynamic_timeout_last_rules':[],
@@ -266,16 +266,16 @@ if __name__ == '__main__':
     config_file = args.config_file
     linear = args.linear
 
-    # Parse the config file
-    config_instance = switch_parser.Config(config_file)
-    config_instance.parse_config_file()
-    config = config_instance.config
-    
     # Initialize
     pathes = []
     file_cat = []
     times = []
     num_switches = 0
+
+    # Parse the config file
+    config_instance = switch_parser.Config(config_file)
+    config_instance.parse_config_file()
+    config = config_instance.config
 
     # Save to 'data' folder:
     try:

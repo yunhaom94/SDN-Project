@@ -22,7 +22,7 @@ Multiplier (Maximum multiplier should less than 10s)
 Cache size: TBD
 
 Threshold:
-    2 to 5 every 1
+    Currently 2
 """
 
 import os
@@ -98,7 +98,29 @@ if __name__ == '__main__':
                 # Detect timeout:
                 cur_fp.write("timeout=" + str(timeout_list[i][j]) + "\n")
                 cur_fp.write("cache_timeout_multiplier=" + str(mult_list[i][k]) + "\n")
-            
+    
+    # Generate dynamic timeout test files
+    num_file = 60 // x
+    for i in range(num_file):
+        file_name = "dynamic_config" + str(i) + ".txt"
+        cur_fp  = open(file_name, "w+")
+
+        cur_fp.write("[COMMON]\n")
+        cur_fp.write("trace_path=" + trace_path + "\n")
+        cur_fp.write("num_switches=" + str(x) + "\n")
+
+        for j in range(x):
+            cur_fp.write("[SW" + str(start_id) + "]\n")
+            cur_fp.write("rule=cache_dynamic_timeout_last_rules\n")
+            start_id += 1
+
+            # Detect timeout:
+            total_index = i * x + j
+            row = total_index // 10
+            col = total_index % 10
+            cur_fp.write("timeout=" + str(timeout_list[row][col]) + "\n")
+    
+        cur_fp.close()
 
 
 
