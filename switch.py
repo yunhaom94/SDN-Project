@@ -215,7 +215,10 @@ Maximum Number of Installed Rules At a Time: {max_flow_count}
         max_packets=str("N/A"),\
         hit_ratio=hit_ratio)
 
-        if self.rule  == "cache_fixed_timeout" or self.rule == "cache_dynamic_timeout_last_rules":
+        if self.rule in ["cache_fixed_timeout", 
+                        "cache_dynamic_timeout_last_rules", 
+                        "cache_no_timeout_random",
+                        "cache_no_timeout_fifo"]:
             output_str += self.flow_table.out_secondary_stats()
 
         output_str += "*"
@@ -417,6 +420,7 @@ class SmartTimeTable(BaseFlowTable):
     def __init__(self, min_timeout):
         super().__init__(min_timeout)
         self.timeout_table = {} # because the original table doesn't have timeout info and I don't want to change to much code
+            
     
 
     def existing_flow(self, packet):
@@ -441,6 +445,8 @@ class SmartTimeTable(BaseFlowTable):
             self.timeout_table[pid].append(timeout)
 
         super().existing_flow(packet)
+        
+        self.should_active = [] # reset this to 0 because it's not used for less memory
 
     def hold_factor(self, flow_id, cur_time):
         '''
@@ -648,8 +654,8 @@ class RecycleBinFlowTable(BaseFlowTable):
         # we pretend we have rule info in secondary table
         self.secondary_table = [] 
         self.secondary_table_size = secondary_table_size
-        self.cache_hits = 0
-        self.cache_misses = 0
+        self.cache_hits = 1
+        self.cache_misses = 1
                         
         if eviction_policy == 1:
             self.eviction_policy = self.random_eviction
