@@ -121,14 +121,72 @@ if __name__ == '__main__':
             cur_fp.write("timeout=" + str(timeout_list[row][col]) + "\n")
     
         cur_fp.close()
+        
+    # Generate smart time test files
+    num_file = 60 // x
+    for i in range(num_file):
+        file_name = "smart_time_config" + str(i) + ".txt"
+        cur_fp  = open(file_name, "w+")
 
+        cur_fp.write("[COMMON]\n")
+        cur_fp.write("trace_path=" + trace_path + "\n")
+        cur_fp.write("num_switches=" + str(x) + "\n")
 
+        for j in range(x):
+            cur_fp.write("[SW" + str(start_id) + "]\n")
+            cur_fp.write("rule=smart_time\n")
+            start_id += 1
 
-
-
+            # Detect timeout:
+            total_index = i * x + j
+            row = total_index // 10
+            col = total_index % 10
+            cur_fp.write("timeout=" + str(timeout_list[row][col]) + "\n")
     
+        cur_fp.close()
 
+    # Generate cache no timeout random test files
+    for i in range(6):
+        for j in range(0, 10, 2):
+            file_name = "cache_no_timeout_random" + str(i*10 + j) + ".txt"
+            cur_fp = open(file_name, "w+")
 
+            cur_fp.write("[COMMON]\n")
+            cur_fp.write("trace_path=" + trace_path + "\n")
+            cur_fp.write("num_switches=" + str(8) + "\n")
 
+            begin = 200
+            for k in range(8):
 
+                cur_fp.write("[SW" + str(start_id) + "]\n")
+                cur_fp.write("rule=cache_no_timeout_random\n")
+                start_id += 1
 
+                # Detect timeout:
+                cur_fp.write("timeout=" + str(timeout_list[i][j]) + "\n")
+                cur_fp.write("cache_size=" + str(begin) + "\n")
+                begin += 200
+            cur_fp.close()
+    
+    # Generate cache no timeout fifo test files
+    for i in range(6):
+        for j in range(0, 10, 2):
+            file_name = "cache_no_timeout_fifo" + str(i*10 + j) + ".txt"
+            cur_fp = open(file_name, "w+")
+
+            cur_fp.write("[COMMON]\n")
+            cur_fp.write("trace_path=" + trace_path + "\n")
+            cur_fp.write("num_switches=" + str(8) + "\n")
+
+            begin = 200
+            for k in range(8):
+
+                cur_fp.write("[SW" + str(start_id) + "]\n")
+                cur_fp.write("rule=cache_no_timeout_fifo\n")
+                start_id += 1
+
+                # Detect timeout:
+                cur_fp.write("timeout=" + str(timeout_list[i][j]) + "\n")
+                cur_fp.write("cache_size=" + str(begin) + "\n")
+                begin += 200
+            cur_fp.close()
