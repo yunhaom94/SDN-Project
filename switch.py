@@ -72,10 +72,20 @@ class Switch:
         if "rule" in kwargs.keys():
             rule = kwargs["rule"]
             if rule == "cache_no_timeout_random":
-                self.flow_table = RecycleBinFlowTable(timeout, 1)
+                if "cache_size" in kwargs.keys():
+                    cache_size = kwargs["cache_size"]
+                else:
+                    cache_size = 10
+
+                self.flow_table = RecycleBinFlowTable(timeout, 1, cache_size)
 
             elif rule == "cache_no_timeout_fifo":
-                self.flow_table = RecycleBinFlowTable(timeout, 2)
+                if "cache_size" in kwargs.keys():
+                    cache_size = kwargs["cache_size"]
+                else:
+                    cache_size = 10
+
+                self.flow_table = RecycleBinFlowTable(timeout, 2, cache_size)
 
             elif rule == "cache_fixed_timeout":
                 ctm = 10
@@ -462,7 +472,15 @@ class SmartTimeTable(BaseFlowTable):
         else:
             return float((active_time + inactive_time) / active_time)
         
-        
+
+    def all_timeout(self, current_time):
+        """
+        Iterates through the flow table and checks for timeout.
+        """
+        expired = [k for k, v in self.table.items() if v.active and self.check_timeout(v, current_time)]
+        for id in expired:	
+            self.deactivate_flow(id)	
+
 
     def check_timeout(self, flow, current_time):
         # converts to ms
@@ -630,6 +648,8 @@ class RecycleBinFlowTable(BaseFlowTable):
         # we pretend we have rule info in secondary table
         self.secondary_table = [] 
         self.secondary_table_size = secondary_table_size
+        self.cache_hits = 0
+        self.cache_misses = 0
                         
         if eviction_policy == 1:
             self.eviction_policy = self.random_eviction
@@ -676,8 +696,10 @@ class RecycleBinFlowTable(BaseFlowTable):
 
     def if_secondary_exists(self, id):
         if id in self.secondary_table:
+            self.cache_hits += 1
             return True
         else:
+            self.cache_misses += 1
             return False
 
 
@@ -696,6 +718,19 @@ class RecycleBinFlowTable(BaseFlowTable):
 
     def FIFO(self):
         self.secondary_table.pop(0)
+
+
+    def out_secondary_stats(self):
+        out_str = \
+'''
+Current Cache Size: {snd_size}
+Current Cache Hit Rate: {hit_rate}
+Current Cache Access: {access}
+'''.format(snd_size=self.secondary_table_size,
+           hit_rate=(self.cache_hits/(self.cache_hits + self.cache_misses)),
+           access=self.cache_hits + self.cache_misses)
+
+        return out_str
 
 class Flow:
     def __init__(self, id, ip_src, ip_dst, ip_protocol, sport, dport, cur_time):
