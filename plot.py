@@ -142,22 +142,12 @@ def parse(file_name, file_cate, file_to):
     csv_fp.close()
     return [all_time, all_active_flows, all_hit_rate]
 
-def parse_all(all_info, file_cat, times, linear=False):
+def parse_all(all_info, file_cat, categories, times, linear=False):
     """
     all_info: list of [all_time, all_active_flows, all_hit_rate]
     file_cat: list of switches' categories
     times: list of switches' timeouts
     """
-    # TODO: MIGHT CHANGE:
-    # Each category contains all infomation
-    categories = {'no_rule': [],
-                    'cache_fixed_timeout': [],
-                    'cache_5x': [],
-                    'cache_10x': [],
-                    'cache_dynamic_timeout_last_rules':[],
-                    'smart_time': []
-                    }
-
     for i in range(len(file_cat)):
         categories[file_cat[i]].append(i)
 
@@ -269,6 +259,7 @@ if __name__ == '__main__':
     # Initialize
     pathes = []
     file_cat = []
+    categories = {}
     times = []
     num_switches = 0
 
@@ -304,7 +295,12 @@ if __name__ == '__main__':
                     continue
             
             if config.has_option(name, "rule"):
-                file_cat.append(config[name]["rule"])
+                rule_name = config[name]["rule"]
+                multiplier = ""
+                if config.has_option(name, "cache_timeout_multiplier"):
+                    multiplier = config[name]["cache_timeout_multiplier"]
+                file_cat.append(rule_name + multiplier)
+                categories[rule_name + multiplier] = []
             else:
                 file_cat.append("no_rule")
 
@@ -315,7 +311,7 @@ if __name__ == '__main__':
             if num_switches > config_instance.num_switches:
                 break
     
-    # Start analyze data outputs:
+    # Parse single file:
     print("======================")
     all_info = []
     for i in range(len(pathes)):
@@ -325,5 +321,5 @@ if __name__ == '__main__':
         print("======================")
     
     print("Parsing all information: ")
-    parse_all(all_info, file_cat, times, linear=linear)
+    parse_all(all_info, file_cat, categories, times, linear=linear)
     print("Done. GL")
