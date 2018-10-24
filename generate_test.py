@@ -46,32 +46,13 @@ if __name__ == '__main__':
             start = start + 10 * (2 ** i)
         timeout_list.append(cur_range)
 
-    # Generate no_cache test files
+
     num_file = 60 // x
     file_name = "config.txt"
     cur_fp = open(file_name, "w+")
     cur_fp.write("[COMMON]\n")
     cur_fp.write("trace_path=" + trace_path + "\n")
     cur_fp.write("num_switches=720\n")
-    for i in range(num_file):
-        # file_name = "no_cache_config" + str(i) + ".txt"
-        # cur_fp  = open(file_name, "w+")
-
-        # cur_fp.write("[COMMON]\n")
-        # cur_fp.write("trace_path=" + trace_path + "\n")
-        # cur_fp.write("num_switches=" + str(x) + "\n")
-
-        for j in range(x):
-            cur_fp.write("[SW" + str(start_id) + "]\n")
-            start_id += 1
-
-            # Detect timeout:
-            total_index = i * x + j
-            row = total_index // 10
-            col = total_index % 10
-            cur_fp.write("timeout=" + str(timeout_list[row][col]) + "\n")
-    
-        # cur_fp.close()
 
     # Generate Multiplier
     mult_list = []
@@ -84,114 +65,134 @@ if __name__ == '__main__':
             start = start + gap_list[i]
         mult_list.append(cur_range)
 
-
-    # Generate fixed timeout test files
-    for i in range(6):
-        for j in range(10):
-            # file_name = "cache_fixed_config" + str(i*10 + j) + ".txt"
-            # cur_fp = open(file_name, "w+")
+    if 0:
+        # Generate no_cache test files
+        for i in range(num_file):
+            # file_name = "no_cache_config" + str(i) + ".txt"
+            # cur_fp  = open(file_name, "w+")
 
             # cur_fp.write("[COMMON]\n")
             # cur_fp.write("trace_path=" + trace_path + "\n")
             # cur_fp.write("num_switches=" + str(x) + "\n")
 
-            for k in range(10):
+            for j in range(x):
                 cur_fp.write("[SW" + str(start_id) + "]\n")
-                cur_fp.write("rule=cache_fixed_timeout\n")
                 start_id += 1
 
                 # Detect timeout:
-                cur_fp.write("timeout=" + str(timeout_list[i][j]) + "\n")
-                cur_fp.write("cache_timeout_multiplier=" + str(mult_list[i][k]) + "\n")
-    
-    # Generate dynamic timeout test files
-    num_file = 60 // x
-    for i in range(num_file):
-        # file_name = "dynamic_config" + str(i) + ".txt"
-        # cur_fp  = open(file_name, "w+")
-
-        # cur_fp.write("[COMMON]\n")
-        # cur_fp.write("trace_path=" + trace_path + "\n")
-        # cur_fp.write("num_switches=" + str(x) + "\n")
-
-        for j in range(x):
-            cur_fp.write("[SW" + str(start_id) + "]\n")
-            cur_fp.write("rule=cache_dynamic_timeout_last_rules\n")
-            start_id += 1
-
-            # Detect timeout:
-            total_index = i * x + j
-            row = total_index // 10
-            col = total_index % 10
-            cur_fp.write("timeout=" + str(timeout_list[row][col]) + "\n")
-    
-        # cur_fp.close()
+                total_index = i * x + j
+                row = total_index // 10
+                col = total_index % 10
+                cur_fp.write("timeout=" + str(timeout_list[row][col]) + "\n")
         
-    # # Generate smart time test files
-    # num_file = 60 // x
-    # for i in range(num_file):
-    #     # file_name = "smart_time_config" + str(i) + ".txt"
-    #     # cur_fp  = open(file_name, "w+")
+            # cur_fp.close()
+        # Generate fixed timeout test files
+        for i in range(6):
+            for j in range(10):
+                # file_name = "cache_fixed_config" + str(i*10 + j) + ".txt"
+                # cur_fp = open(file_name, "w+")
 
-    #     # cur_fp.write("[COMMON]\n")
-    #     # cur_fp.write("trace_path=" + trace_path + "\n")
-    #     # cur_fp.write("num_switches=" + str(x) + "\n")
+                # cur_fp.write("[COMMON]\n")
+                # cur_fp.write("trace_path=" + trace_path + "\n")
+                # cur_fp.write("num_switches=" + str(x) + "\n")
 
-    #     for j in range(x):
-    #         cur_fp.write("[SW" + str(start_id) + "]\n")
-    #         cur_fp.write("rule=smart_time\n")
-    #         start_id += 1
+                for k in range(10):
+                    cur_fp.write("[SW" + str(start_id) + "]\n")
+                    cur_fp.write("rule=cache_fixed_timeout\n")
+                    start_id += 1
 
-    #         # Detect timeout:
-    #         total_index = i * x + j
-    #         row = total_index // 10
-    #         col = total_index % 10
-    #         cur_fp.write("timeout=" + str(timeout_list[row][col]) + "\n")
+                    # Detect timeout:
+                    cur_fp.write("timeout=" + str(timeout_list[i][j]) + "\n")
+                    cur_fp.write("cache_timeout_multiplier=" + str(mult_list[i][k]) + "\n")
+        
+        # Generate dynamic timeout test files
+        num_file = 60 // x
+        for i in range(num_file):
+            # file_name = "dynamic_config" + str(i) + ".txt"
+            # cur_fp  = open(file_name, "w+")
+
+            # cur_fp.write("[COMMON]\n")
+            # cur_fp.write("trace_path=" + trace_path + "\n")
+            # cur_fp.write("num_switches=" + str(x) + "\n")
+
+            for j in range(x):
+                cur_fp.write("[SW" + str(start_id) + "]\n")
+                cur_fp.write("rule=cache_dynamic_timeout_last_rules\n")
+                start_id += 1
+
+                # Detect timeout:
+                total_index = i * x + j
+                row = total_index // 10
+                col = total_index % 10
+                cur_fp.write("timeout=" + str(timeout_list[row][col]) + "\n")
+        
+            # cur_fp.close()
+        
+        # Generate smart time test files
+        num_file = 60 // x
+        for i in range(num_file):
+            # file_name = "smart_time_config" + str(i) + ".txt"
+            # cur_fp  = open(file_name, "w+")
+
+            # cur_fp.write("[COMMON]\n")
+            # cur_fp.write("trace_path=" + trace_path + "\n")
+            # cur_fp.write("num_switches=" + str(x) + "\n")
+
+            for j in range(x):
+                cur_fp.write("[SW" + str(start_id) + "]\n")
+                cur_fp.write("rule=smart_time\n")
+                start_id += 1
+
+                # Detect timeout:
+                total_index = i * x + j
+                row = total_index // 10
+                col = total_index % 10
+                cur_fp.write("timeout=" + str(timeout_list[row][col]) + "\n")
+        
+            # cur_fp.close()
+
+        # Generate cache no timeout random test files
+        for i in range(6):
+            for j in range(0, 10, 2):
+                # file_name = "cache_no_timeout_random" + str(i*10 + j) + ".txt"
+                # cur_fp = open(file_name, "w+")
+
+                # cur_fp.write("[COMMON]\n")
+                # cur_fp.write("trace_path=" + trace_path + "\n")
+                # cur_fp.write("num_switches=" + str(8) + "\n")
+
+                begin = 200
+                for k in range(8):
+
+                    cur_fp.write("[SW" + str(start_id) + "]\n")
+                    cur_fp.write("rule=cache_no_timeout_random\n")
+                    start_id += 1
+
+                    # Detect timeout:
+                    cur_fp.write("timeout=" + str(timeout_list[i][j]) + "\n")
+                    cur_fp.write("cache_size=" + str(begin) + "\n")
+                    begin += 200
+                # cur_fp.close()
     
-    #     # cur_fp.close()
+        # Generate cache no timeout fifo test files
+        for i in range(6):
+            for j in range(0, 10, 2):
+                # file_name = "cache_no_timeout_fifo" + str(i*10 + j) + ".txt"
+                # cur_fp = open(file_name, "w+")
 
-    # # Generate cache no timeout random test files
-    # for i in range(6):
-    #     for j in range(0, 10, 2):
-    #         # file_name = "cache_no_timeout_random" + str(i*10 + j) + ".txt"
-    #         # cur_fp = open(file_name, "w+")
+                # cur_fp.write("[COMMON]\n")
+                # cur_fp.write("trace_path=" + trace_path + "\n")
+                # cur_fp.write("num_switches=" + str(8) + "\n")
 
-    #         # cur_fp.write("[COMMON]\n")
-    #         # cur_fp.write("trace_path=" + trace_path + "\n")
-    #         # cur_fp.write("num_switches=" + str(8) + "\n")
+                begin = 200
+                for k in range(8):
 
-    #         begin = 200
-    #         for k in range(8):
+                    cur_fp.write("[SW" + str(start_id) + "]\n")
+                    cur_fp.write("rule=cache_no_timeout_fifo\n")
+                    start_id += 1
 
-    #             cur_fp.write("[SW" + str(start_id) + "]\n")
-    #             cur_fp.write("rule=cache_no_timeout_random\n")
-    #             start_id += 1
-
-    #             # Detect timeout:
-    #             cur_fp.write("timeout=" + str(timeout_list[i][j]) + "\n")
-    #             cur_fp.write("cache_size=" + str(begin) + "\n")
-    #             begin += 200
-    #         # cur_fp.close()
-    
-    # # Generate cache no timeout fifo test files
-    # for i in range(6):
-    #     for j in range(0, 10, 2):
-    #         # file_name = "cache_no_timeout_fifo" + str(i*10 + j) + ".txt"
-    #         # cur_fp = open(file_name, "w+")
-
-    #         # cur_fp.write("[COMMON]\n")
-    #         # cur_fp.write("trace_path=" + trace_path + "\n")
-    #         # cur_fp.write("num_switches=" + str(8) + "\n")
-
-    #         begin = 200
-    #         for k in range(8):
-
-    #             cur_fp.write("[SW" + str(start_id) + "]\n")
-    #             cur_fp.write("rule=cache_no_timeout_fifo\n")
-    #             start_id += 1
-
-    #             # Detect timeout:
-    #             cur_fp.write("timeout=" + str(timeout_list[i][j]) + "\n")
-    #             cur_fp.write("cache_size=" + str(begin) + "\n")
-    #             begin += 200
-    #         # cur_fp.close()
+                    # Detect timeout:
+                    cur_fp.write("timeout=" + str(timeout_list[i][j]) + "\n")
+                    cur_fp.write("cache_size=" + str(begin) + "\n")
+                    begin += 200
+                # cur_fp.close()
