@@ -21,7 +21,7 @@ packet_cat = ["max_packet", "99_packet", "95_packet", "mean_packet", "median_pac
 cache_cat = ["max_cache", "99_cache", "95_cache", "mean_cache", "median_cache"]
 
 # Find all file_cat
-file_cat = ["no_cache", "dynamic", "fixed_cache", "smart_time"]
+file_cat = ["no_cache", "dynamic","fifo", "fixed_cache", "smart_time"]
 # file_cat = ["fixed_cache"]
 file_out = {}
 
@@ -29,9 +29,9 @@ for category in file_cat:
     fp = pandas.read_csv(category + ".csv", sep=",")
     data = fp.values
 
-    if (category != "fixed_cache"):
+    if (category != "fixed_cache" and category != "fifo"):
         file_out[category] = data
-    else:
+    elif (category == "fixed_cache"):
         # Handle different multiplier
         N, _ = data.shape
         multi = {}
@@ -45,6 +45,20 @@ for category in file_cat:
         for cur_m in multi.keys():
             new_catname = category + str(cur_m)
             file_out[new_catname] = np.array(multi[cur_m])
+    else:
+        # Handle different cache_size
+        N, _ = data.shape
+        cache = {}
+        for i in range(N):
+            cur_cache = data[i, Q["max_cache"]]
+            # if cur_cache == 200:
+            if cur_cache in cache.keys():
+                cache[cur_cache].append(data[i, :])
+            else:
+                cache[cur_cache] = [data[i, :]]
+        for cur_cache in cache.keys():
+            new_catname = category + str(cur_cache)
+            file_out[new_catname] = np.array(cache[cur_cache])
             
 # Main table
 for cur_packet in packet_cat:

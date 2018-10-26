@@ -174,25 +174,26 @@ if __name__ == '__main__':
                     begin += 200
                 # cur_fp.close()
     
-        # Generate cache no timeout fifo test files
-        for i in range(6):
-            for j in range(0, 10, 2):
-                # file_name = "cache_no_timeout_fifo" + str(i*10 + j) + ".txt"
-                # cur_fp = open(file_name, "w+")
+    # Generate cache no timeout fifo test files
+    start_id = 1020
+    for i in range(6):
+        for j in range(0, 10, 2):
+            # file_name = "cache_no_timeout_fifo" + str(i*10 + j) + ".txt"
+            # cur_fp = open(file_name, "w+")
 
-                # cur_fp.write("[COMMON]\n")
-                # cur_fp.write("trace_path=" + trace_path + "\n")
-                # cur_fp.write("num_switches=" + str(8) + "\n")
+            # cur_fp.write("[COMMON]\n")
+            # cur_fp.write("trace_path=" + trace_path + "\n")
+            # cur_fp.write("num_switches=" + str(8) + "\n")
 
-                begin = 200
-                for k in range(8):
+            begin = 200
+            for k in range(8):
 
-                    cur_fp.write("[SW" + str(start_id) + "]\n")
-                    cur_fp.write("rule=cache_no_timeout_fifo\n")
-                    start_id += 1
+                cur_fp.write("[SW" + str(start_id) + "]\n")
+                cur_fp.write("rule=cache_no_timeout_fifo\n")
+                start_id += 1
 
-                    # Detect timeout:
-                    cur_fp.write("timeout=" + str(timeout_list[i][j]) + "\n")
-                    cur_fp.write("cache_size=" + str(begin) + "\n")
-                    begin += 200
-                # cur_fp.close()
+                # Detect timeout:
+                cur_fp.write("timeout=" + str(timeout_list[i][j]) + "\n")
+                cur_fp.write("cache_size=" + str(begin) + "\n")
+                begin += 200
+            # cur_fp.close()
